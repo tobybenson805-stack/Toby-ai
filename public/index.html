@@ -1,0 +1,152 @@
+here
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131c">
+  <link rel="manifest" href="/manifest.json">
+  <title>Toby AI</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #10131c;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    header {
+      padding: 18px;
+      background: #191f2d;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    header span { color: #63a7ff; }
+    #chat {
+      padding: 16px;
+      height: calc(100dvh - 145px);
+      overflow-y: auto;
+    }
+    .message {
+      padding: 13px;
+      margin: 12px 0;
+      border-radius: 14px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    .user { background: #245b9d; margin-left: 35px; }
+    .bot { background: #252d3d; margin-right: 35px; }
+    .controls {
+      display: flex;
+      gap: 8px;
+      padding: 12px;
+      background: #191f2d;
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+    }
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 14px;
+      border-radius: 12px;
+      border: 0;
+      background: #30394b;
+      color: white;
+      font-size: 16px;
+    }
+    button {
+      border: 0;
+      border-radius: 12px;
+      padding: 12px;
+      background: #3988ed;
+      color: white;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>🤖 Toby <span>AI</span></header>
+
+  <main id="chat">
+    <div class="message bot">
+      Hey! I'm Toby AI. 😎
+      What can I help you with today?
+    </div>
+  </main>
+
+  <div class="controls">
+    <input id="message" placeholder="Ask Toby anything...">
+    <button onclick="sendMessage()">➤</button>
+    <button onclick="listen()">🎤</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("message");
+    const messages = [];
+
+    function addMessage(text, type) {
+      const div = document.createElement("div");
+      div.className = "message " + type;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = "";
+      addMessage(text, "user");
+      messages.push({ role: "user", content: text });
+
+      const button = document.querySelector(".controls button");
+      button.disabled = true;
+
+      try {
+        const response = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Request failed");
+
+        const reply = data.reply || "I couldn't create a reply.";
+        messages.push({ role: "assistant", content: reply });
+        addMessage(reply, "bot");
+      } catch (error) {
+        addMessage("Sorry! I couldn't connect. Please try again.", "bot");
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") sendMessage();
+    });
+
+    function listen() {
+      const SpeechRecognition =
+        window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        addMessage("Voice input isn't supported here. Try your phone keyboard microphone.", "bot");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.onresult = event => {
+        input.value = event.results[0][0].transcript;
+        sendMessage();
+      };
+      recognition.start();
+    }
+  </script>
+</body>
+</html>
