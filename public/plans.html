@@ -1,0 +1,87 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10131c">
+  <title>Toby AI Membership</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 25px 16px;
+      background: #10131c;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    h1 { text-align: center; }
+    p { color: #b9c2d3; line-height: 1.6; }
+    .plan {
+      max-width: 420px;
+      margin: 22px auto;
+      padding: 22px;
+      border-radius: 18px;
+      background: #202a3b;
+      border: 1px solid #3c4960;
+    }
+    .premium { border: 2px solid #a77bff; }
+    .price { font-size: 30px; font-weight: bold; }
+    li { margin: 13px 0; }
+    button {
+      width: 100%;
+      padding: 14px;
+      border: 0;
+      border-radius: 10px;
+      background: #3988ed;
+      color: white;
+      font-size: 16px;
+    }
+    .premium button { background: #8856dc; }
+    .note {
+      text-align: center;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🤖 Toby AI Plans</h1>
+  <p style="text-align:center">
+    Choose the Toby AI experience that works for you.
+  </p>
+
+  <section class="plan">
+    <h2>🆓 Free</h2>
+    <div class="price">$0</div>
+    <p>Start using Toby AI for free.</p>
+    <ul>
+      <li>AI chatting</li>
+      <li>Homework assistance</li>
+      <li>Basic voice input</li>
+      <li>Daily message allowance</li>
+    </ul>
+    <button onclick="location.href='/'">
+      Use Free Plan
+    </button>
+  </section>
+
+  <section class="plan premium">
+    <h2>⭐ Premium</h2>
+    <div class="price">Coming soon</div>
+    <p>Get more from Toby AI.</p>
+    <ul>
+      <li>Everything in Free</li>
+      <li>Higher message allowance</li>
+      <li>Advanced AI tools</li>
+      <li>More research features</li>
+      <li>Expanded voice features</li>
+    </ul>
+    <button onclick="alert('Toby AI Premium is coming soon!')">
+      Coming Soon
+    </button>
+  </section>
+
+  <p class="note">
+    Premium memberships are not yet available.
+  </p>
+</body>
+</html>
