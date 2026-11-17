@@ -98,7 +98,8 @@ thchere
     <button onclick="sendMessage()">➤</button>
     <button onclick="listen()">🎤</button>
   </div>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/supabase-config.js"></script>
   <script>
     const chat = document.getElementById("chat");
 
@@ -206,9 +207,6 @@ async function logIn() {
       };
       recognition.start();
     }
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="/supabase-config.js"></script>
-
   </script>
 </body>
 </html>
