@@ -29,7 +29,7 @@ app.post("/chat", async (req, res) => {
     }).join("\n");
 
     const response = await ai.models.generateContent({
-      model: model: "gemini-3.1-flash-lite",
+      model: "gemini-3.1-flash-lite",
       contents: conversation,
       config: {
         systemInstruction:
