@@ -154,7 +154,21 @@ async function logIn() {
       chat.scrollTop = chat.scrollHeight;
     }
 
-    async function sendMessage() {
+    async function sendMessage() function speakReply(text) {
+  if (!("speechSynthesis" in window)) {
+    addMessage("Voice replies are not supported by this browser.", "bot");
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.lang = "en-US";
+  speech.rate = 1;
+  speech.pitch = 1;
+
+  window.speechSynthesis.speak(speech);
+    } {
       const text = input.value.trim();
       if (!text) return;
 
