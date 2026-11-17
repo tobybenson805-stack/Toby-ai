@@ -1,0 +1,8 @@
+hereconst SUPABASE_URL = "YOUR_ACTUAL_PROJECT_URL";
+
+const SUPABASE_PUBLISHABLE_KEY = "YOUR_ACTUAL_PUBLISHABLE_KEY";
+
+window.tobySupabase = supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY
+);
