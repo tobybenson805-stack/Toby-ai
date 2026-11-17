@@ -75,6 +75,17 @@ thchere
   </a>
   </header>
 
+<section id="account" style="padding:20px;text-align:center;background:#191f2d;">
+  <h2>Welcome to Toby AI 🤖</h2>
+  <input id="email" type="email" placeholder="Enter your email">
+  <br><br>
+  <input id="password" type="password" placeholder="Create a password">
+  <br><br>
+  <button onclick="signUp()">Create Account</button>
+  <button onclick="logIn()">Log In</button>
+  <p id="authMessage"></p>
+</section>
+
   <main id="chat">
     <div class="message bot">
       Hey! I'm Toby AI. 😎
@@ -90,6 +101,48 @@ thchere
 
   <script>
     const chat = document.getElementById("chat");
+
+async function signUp() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const message = document.getElementById("authMessage");
+
+  if (!email || !password) {
+    message.textContent = "Enter your email and password.";
+    return;
+  }
+
+  if (password.length < 8) {
+    message.textContent = "Password must be at least 8 characters.";
+    return;
+  }
+
+  const { error } = await window.tobySupabase.auth.signUp({
+    email,
+    password
+  });
+
+  message.textContent = error
+    ? error.message
+    : "Account created! Check your email for confirmation.";
+}
+
+async function logIn() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value;
+  const message = document.getElementById("authMessage");
+
+  const { error } = await window.tobySupabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  message.textContent = error
+    ? error.message
+    : "Welcome back to Toby AI!";
+}
+
+
     const input = document.getElementById("message");
     const messages = [];
 
