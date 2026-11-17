@@ -192,6 +192,7 @@ async function logIn() {
         const reply = data.reply || "I couldn't create a reply.";
         messages.push({ role: "assistant", content: reply });
         addMessage(reply, "bot");
+        speakReply(reply);
       } catch (error) {
         addMessage("Sorry! I couldn't connect. Please try again.", "bot");
       } finally {
@@ -202,7 +203,20 @@ async function logIn() {
     input.addEventListener("keydown", event => {
       if (event.key === "Enter") sendMessage();
     });
+function speakReply(text) {
+  if (!("speechSynthesis" in window)) {
+    return;
+  }
 
+  window.speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.lang = "en-US";
+  speech.rate = 1;
+  speech.pitch = 1;
+
+  window.speechSynthesis.speak(speech);
+          }
     function listen() {
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
