@@ -18,17 +18,57 @@
     }
 
     header {
-      padding: 18px;
+      padding: 16px;
       background: #191f2d;
       font-size: 22px;
       font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
     }
 
     header span { color: #63a7ff; }
 
+    .header-buttons {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 11px;
+      background: #3988ed;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: 0.5; }
+
+    #account {
+      padding: 18px;
+      text-align: center;
+      background: #191f2d;
+    }
+
+    #account input {
+      width: 90%;
+      max-width: 350px;
+      padding: 13px;
+      border: 0;
+      border-radius: 10px;
+      background: #30394b;
+      color: white;
+      font-size: 16px;
+    }
+
     #chat {
       padding: 16px;
-      height: calc(100dvh - 145px);
+      height: calc(100dvh - 240px);
+      min-height: 250px;
       overflow-y: auto;
     }
 
@@ -61,10 +101,10 @@
       width: 100%;
     }
 
-    input {
+    #message {
       flex: 1;
       min-width: 0;
-      padding: 14px;
+      padding: 13px;
       border-radius: 12px;
       border: 0;
       background: #30394b;
@@ -72,40 +112,127 @@
       font-size: 16px;
     }
 
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px;
-      background: #3988ed;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
+    #historyPanel {
+      display: none;
+      position: fixed;
+      z-index: 5;
+      top: 60px;
+      left: 0;
+      bottom: 65px;
+      width: min(300px, 85%);
+      background: #191f2d;
+      padding: 15px;
+      overflow-y: auto;
+      box-shadow: 5px 0 20px #0008;
     }
 
-    button:disabled {
-      opacity: 0.5;
+    .history-item {
+      display: block;
+      width: 100%;
+      text-align: left;
+      margin: 8px 0;
+      background: #30394b;
     }
 
-    #account input {
-      width: 90%;
-      max-width: 350px;
+    #loading {
+      display: none;
+      padding: 10px 16px;
+      color: #9bbef5;
+      font-size: 14px;
+    }
+
+    #splash {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      background: #10131c;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      transition: opacity .5s;
+    }
+
+    .logo {
+      font-size: 65px;
+      animation: float 1.5s infinite ease-in-out;
+    }
+
+    .splash-title {
+      font-size: 30px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .splash-title span { color: #63a7ff; }
+
+    .loader {
+      width: 45px;
+      height: 45px;
+      border: 4px solid #30394b;
+      border-top-color: #3988ed;
+      border-radius: 50%;
+      margin-top: 25px;
+      animation: spin .8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      50% { transform: translateY(-10px); }
+    }
+
+    .small-note {
+      color: #aab6ca;
+      font-size: 12px;
+      text-align: center;
+      padding: 5px;
     }
   </style>
 </head>
 
 <body>
 
+<!-- SPLASH SCREEN -->
+<div id="splash">
+  <div class="logo">🤖</div>
+  <div class="splash-title">Toby <span>AI</span></div>
+  <p>Your smart AI assistant</p>
+  <div class="loader"></div>
+</div>
+
 <header>
-  🤖 Toby <span>AI</span>
-  <a href="/plans.html"
-     style="float:right;color:white;font-size:14px">
-    Plans
-  </a>
+  <div>
+    <button onclick="toggleHistory()">☰</button>
+    Toby <span>AI</span>
+  </div>
+
+  <div class="header-buttons">
+    <button id="voiceBtn" onclick="toggleVoice()">🔊</button>
+    <a href="/plans.html"
+       style="color:white;text-decoration:none;font-size:13px">
+      Premium
+    </a>
+  </div>
 </header>
 
-<section id="account"
-  style="padding:20px;text-align:center;background:#191f2d;">
+<!-- CHAT HISTORY -->
+<aside id="historyPanel">
+  <h3>💬 Chat history</h3>
+  <button onclick="newChat()">＋ New chat</button>
+  <button onclick="clearHistory()" style="background:#a43c4a">
+    Clear history
+  </button>
+  <div id="historyList"></div>
+  <p class="small-note">
+    Your saved chats are stored on this device.
+  </p>
+</aside>
 
+<!-- ACCOUNT -->
+<section id="account">
   <h2>Welcome to Toby AI 🤖</h2>
 
   <input id="email" type="email"
@@ -131,30 +258,240 @@
   </div>
 </main>
 
-<div class="controls">
+<div id="loading">Toby is thinking...</div>
 
+<div class="controls">
   <input id="message"
     placeholder="Ask Toby anything...">
 
   <button id="sendBtn" onclick="sendMessage()">➤</button>
-
   <button onclick="listen()">🎤</button>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="/supabase-config.js"></script>
 
 <script>
-
 const chat = document.getElementById("chat");
 const input = document.getElementById("message");
 const sendBtn = document.getElementById("sendBtn");
+const loading = document.getElementById("loading");
 
-const messages = [];
+let messages = [];
+let conversations = [];
+let currentConversationId = null;
+let voiceEnabled = true;
+
+// TOBY PERSONALITY
+const personality = `
+You are Toby AI, a clever, friendly and helpful AI assistant.
+Explain things clearly and accurately.
+Be funny when appropriate, but never rude.
+Be encouraging and patient.
+Use simple explanations when someone needs help learning.
+Never pretend to know something you do not know.
+`;
+
+// LOAD SAVED SETTINGS
+try {
+  voiceEnabled = localStorage.getItem("tobyVoice") !== "off";
+  conversations = JSON.parse(
+    localStorage.getItem("tobyHistory") || "[]"
+  );
+} catch (error) {
+  conversations = [];
+}
+
+// SPLASH SCREEN
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const splash = document.getElementById("splash");
+    splash.style.opacity = "0";
+
+    setTimeout(() => {
+      splash.style.display = "none";
+    }, 500);
+  }, 1000);
+
+  updateVoiceButton();
+  renderHistory();
+});
+
+// SAVE CHAT HISTORY
+function saveHistory() {
+  try {
+    localStorage.setItem(
+      "tobyHistory",
+      JSON.stringify(conversations)
+    );
+  } catch (error) {
+    console.error("Could not save chat history:", error);
+  }
+}
+
+// CREATE NEW CHAT
+function newChat() {
+  currentConversationId = Date.now().toString();
+  messages = [];
+
+  conversations.unshift({
+    id: currentConversationId,
+    title: "New conversation",
+    messages: [],
+    updated: Date.now()
+  });
+
+  saveHistory();
+  renderHistory();
+  chat.innerHTML = "";
+
+  addMessage(
+    "Hey! I'm Toby AI. 😎 What can I help you with?",
+    "bot"
+  );
+
+  document.getElementById("historyPanel").style.display = "none";
+}
+
+// SAVE CURRENT CONVERSATION
+function saveCurrentChat() {
+  if (!currentConversationId) {
+    currentConversationId = Date.now().toString();
+
+    conversations.unshift({
+      id: currentConversationId,
+      title: "New conversation",
+      messages: [],
+      updated: Date.now()
+    });
+  }
+
+  const conversation = conversations.find(
+    item => item.id === currentConversationId
+  );
+
+  if (!conversation) return;
+
+  conversation.messages = messages;
+  conversation.updated = Date.now();
+
+  const firstUserMessage = messages.find(
+    item => item.role === "user"
+  );
+
+  if (firstUserMessage) {
+    conversation.title = firstUserMessage.content.slice(0, 35);
+  }
+
+  conversations.sort((a, b) => b.updated - a.updated);
+
+  saveHistory();
+  renderHistory();
+}
+
+// SHOW HISTORY
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = "";
+
+  conversations.forEach(item => {
+    const button = document.createElement("button");
+    button.className = "history-item";
+    button.textContent = "💬 " + item.title;
+
+    button.onclick = () => loadConversation(item.id);
+    list.appendChild(button);
+  });
+}
+
+// OPEN OLD CHAT
+function loadConversation(id) {
+  const conversation = conversations.find(
+    item => item.id === id
+  );
+
+  if (!conversation) return;
+
+  currentConversationId = id;
+  messages = [...conversation.messages];
+
+  chat.innerHTML = "";
+
+  messages.forEach(message => {
+    addMessage(
+      message.content,
+      message.role === "user" ? "user" : "bot"
+    );
+  });
+
+  document.getElementById("historyPanel").style.display = "none";
+}
+
+// OPEN/CLOSE HISTORY
+function toggleHistory() {
+  const panel = document.getElementById("historyPanel");
+
+  panel.style.display =
+    panel.style.display === "block" ? "none" : "block";
+
+  renderHistory();
+}
+
+// CLEAR HISTORY
+function clearHistory() {
+  if (!confirm("Delete all saved conversations on this device?")) {
+    return;
+  }
+
+  conversations = [];
+  messages = [];
+  currentConversationId = null;
+
+  saveHistory();
+  renderHistory();
+  chat.innerHTML = "";
+
+  addMessage("Hello! I'm Toby AI. 😎", "bot");
+}
+
+// VOICE SETTINGS
+function updateVoiceButton() {
+  document.getElementById("voiceBtn").textContent =
+    voiceEnabled ? "🔊" : "🔇";
+}
+
+function toggleVoice() {
+  voiceEnabled = !voiceEnabled;
+
+  localStorage.setItem(
+    "tobyVoice",
+    voiceEnabled ? "on" : "off"
+  );
+
+  if (!voiceEnabled && "speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+  }
+
+  updateVoiceButton();
+}
+
+// SPEAK ANSWERS
+function speakReply(text) {
+  if (!voiceEnabled || !("speechSynthesis" in window)) {
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  const speech = new SpeechSynthesisUtterance(text);
+  speech.lang = "en-US";
+  speech.rate = 1;
+  speech.pitch = 1;
+
+  window.speechSynthesis.speak(speech);
+}
 
 // ACCOUNT CREATION
-
 async function signUp() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
@@ -191,7 +528,6 @@ async function signUp() {
 }
 
 // LOGIN
-
 async function logIn() {
   const email = document.getElementById("email").value.trim();
   const password = document.getElementById("password").value;
@@ -224,7 +560,6 @@ async function logIn() {
 }
 
 // DISPLAY MESSAGES
-
 function addMessage(text, type) {
   const div = document.createElement("div");
 
@@ -235,28 +570,8 @@ function addMessage(text, type) {
   chat.scrollTop = chat.scrollHeight;
 }
 
-// TOBY VOICE REPLY
-
-function speakReply(text) {
-  if (!("speechSynthesis" in window)) {
-    return;
-  }
-
-  window.speechSynthesis.cancel();
-
-  const speech = new SpeechSynthesisUtterance(text);
-
-  speech.lang = "en-US";
-  speech.rate = 1;
-  speech.pitch = 1;
-
-  window.speechSynthesis.speak(speech);
-}
-
 // SEND MESSAGE
-
 async function sendMessage() {
-
   const text = input.value.trim();
 
   if (!text || sendBtn.disabled) return;
@@ -270,10 +585,12 @@ async function sendMessage() {
     content: text
   });
 
+  saveCurrentChat();
+
   sendBtn.disabled = true;
+  loading.style.display = "block";
 
   try {
-
     const response = await fetch("/chat", {
       method: "POST",
 
@@ -282,7 +599,13 @@ async function sendMessage() {
       },
 
       body: JSON.stringify({
-        messages
+        messages: [
+          {
+            role: "system",
+            content: personality
+          },
+          ...messages
+        ]
       })
     });
 
@@ -300,12 +623,10 @@ async function sendMessage() {
     });
 
     addMessage(reply, "bot");
-
-    // SPEAK TOBY'S RESPONSE
+    saveCurrentChat();
     speakReply(reply);
 
   } catch (error) {
-
     console.error("Toby AI error:", error);
 
     addMessage(
@@ -314,14 +635,12 @@ async function sendMessage() {
     );
 
   } finally {
-
+    loading.style.display = "none";
     sendBtn.disabled = false;
-
   }
 }
 
 // ENTER KEY
-
 input.addEventListener("keydown", event => {
   if (event.key === "Enter") {
     sendMessage();
@@ -329,20 +648,16 @@ input.addEventListener("keydown", event => {
 });
 
 // MICROPHONE INPUT
-
 function listen() {
-
   const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-
     addMessage(
       "Voice input isn't supported here. Try your phone keyboard microphone.",
       "bot"
     );
-
     return;
   }
 
@@ -352,27 +667,28 @@ function listen() {
   recognition.interimResults = false;
 
   recognition.onresult = event => {
-
     input.value = event.results[0][0].transcript;
-
     sendMessage();
-
   };
 
   recognition.onerror = () => {
-
-    addMessage(
-      "Microphone error. Please try again.",
-      "bot"
-    );
-
+    addMessage("Microphone error. Please try again.", "bot");
   };
 
   recognition.start();
+}
 
+// RESTORE LAST CONVERSATION
+if (conversations.length > 0) {
+  loadConversation(conversations[0].id);
+} else {
+  addMessage(
+    "Hey! I'm Toby AI. 😎 What can I help you with today?",
+    "bot"
+  );
 }
 
 </script>
 
 </body>
-</html>
+  </html>
