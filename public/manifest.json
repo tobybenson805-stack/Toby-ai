@@ -9,12 +9,7 @@
   "orientation": "portrait",
   "background_color": "#10131c",
   "theme_color": "#10131c",
-  "icons": [
-    {
-      "src": "/icons/toby.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+  "icons": 
     }
   ]
 }
