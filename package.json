@@ -1,3 +1,4 @@
+
 {
   "name": "toby-ai",
   "version": "1.0.0",
@@ -9,6 +10,8 @@
   "dependencies": {
     "express": "^4.21.2",
     "openai": "^5.12.2",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "@supabase/supabase-js": "^2.118.0"
   }
 }
+
