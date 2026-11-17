@@ -2,7 +2,6 @@
 require("dotenv").config();
 
 const express = require("express");
-const OpenAI = require("openai");
 const path = require("path");
 
 const app = express();
@@ -10,37 +9,53 @@ const app = express();
 app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+const MODEL = "gemini-2.5-flash";
 
 app.post("/chat", async (req, res) => {
   try {
     const messages = req.body.messages;
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return res.status(400).json({
-        error: "Please send a message."
-      });
+      return res.status(400).json({ error: "Please send a message." });
     }
 
-    const safeMessages = messages.slice(-20);
+    const contents = messages.slice(-20).map(m => ({
+      role: m.role === "assistant" ? "model" : "user",
+      parts: [{ text: String(m.content) }]
+    }));
 
-    const response = await client.responses.create({
-      model: "gpt-6-astra",
-      instructions: "You are Toby AI, a friendly, funny and helpful AI assistant. Speak English. Help with schoolwork using simple step-by-step explanations. Be respectful and entertaining.",
-      input: safeMessages
-    });
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": process.env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: "You are Toby AI, a friendly, funny and helpful AI assistant." }]
+          },
+          contents
+        })
+      }
+    );
 
-    res.json({
-      reply: response.output_text
-    });
+    const data = await response.json();
 
+    if (!response.ok) {
+      console.error(JSON.stringify(data));
+      return res.status(500).json({ error: "Toby AI is having trouble. Please try again." });
+    }
+
+    const reply = (data.candidates?.[0]?.content?.parts || [])
+      .map(p => p.text || "")
+      .join("");
+
+    res.json({ reply });
   } catch (error) {
     console.error(error);
-    res.status(500).json({
-      error: "Toby AI is having trouble. Please try again."
-    });
+    res.status(500).json({ error: "Toby AI is having trouble. Please try again." });
   }
 });
 
