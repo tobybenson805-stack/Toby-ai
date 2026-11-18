@@ -337,20 +337,9 @@ app.post("/chat", async (req, res) => {
       });
     }
 
-    const conversationText = messages
-      .slice(-20)
-      .map(message => {
-        const role =
-          message.role === "assistant" ? "assistant" : "user";
-
-        return `${role}: ${String(message.content).slice(0, 4000)}`;
-      })
-      .join("\n");
-
-    const reply = await generateTobyReply(conversationText);
-
     let conversationId = req.body.conversationId;
 
+    // Validate an existing conversation.
     if (conversationId) {
       if (!/^\d+$/.test(String(conversationId))) {
         return res.status(400).json({
@@ -359,8 +348,7 @@ app.post("/chat", async (req, res) => {
       }
 
       const existing = await db.query(
-        `SELECT id
-         FROM conversations
+        `SELECT id FROM conversations
          WHERE id = $1 AND clerk_user_id = $2`,
         [conversationId, userId]
       );
@@ -383,6 +371,55 @@ app.post("/chat", async (req, res) => {
       conversationId = created.rows[0].id;
     }
 
+    // Check today's free message allowance.
+    const currentUsage = await checkDailyUsage(userId);
+
+    if (currentUsage >= FREE_DAILY_LIMIT) {
+      return res.status(429).json({
+        error: "You have used your 30 free messages for today. Please come back tomorrow.",
+        limit: FREE_DAILY_LIMIT,
+        used: currentUsage
+      });
+    }
+
+    // Reserve one message slot safely.
+    const reserved = await increaseDailyUsage(userId);
+
+    if (!reserved) {
+      return res.status(429).json({
+        error: "You have used your 30 free messages for today. Please come back tomorrow.",
+        limit: FREE_DAILY_LIMIT
+      });
+    }
+
+    const conversationText = messages
+      .slice(-20)
+      .map(message => {
+        const role =
+          message.role === "assistant" ? "assistant" : "user";
+
+        return `${role}: ${String(message.content).slice(0, 4000)}`;
+      })
+      .join("\n");
+
+    let reply;
+
+    try {
+      reply = await generateTobyReply(conversationText);
+    } catch (error) {
+      // Give the message slot back if AI generation fails.
+      await db.query(
+        `UPDATE daily_usage
+         SET message_count = GREATEST(message_count - 1, 0)
+         WHERE clerk_user_id = $1
+           AND usage_date = CURRENT_DATE`,
+        [userId]
+      );
+
+      throw error;
+    }
+
+    // Save the user message and Toby's reply.
     await db.query(
       `INSERT INTO chat_messages
        (clerk_user_id, conversation_id, role, content)
@@ -407,8 +444,14 @@ app.post("/chat", async (req, res) => {
 
     res.json({
       reply,
-      conversationId
+      conversationId,
+      usage: {
+        used: reserved.message_count,
+        limit: FREE_DAILY_LIMIT,
+        remaining: FREE_DAILY_LIMIT - reserved.message_count
+      }
     });
+
   } catch (error) {
     console.error("Toby AI error:", error);
 
