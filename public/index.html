@@ -479,10 +479,12 @@ function openProfile() {
 
 function closeProfile() {
   document.getElementById("profilePanel").style.display = "none";
-  
-}
-</script>
+      recognition.start();
+  }
+
+  // Start Clerk when the page loads
   window.addEventListener("load", loadClerk);
+}
 </script>
 
 </body>
