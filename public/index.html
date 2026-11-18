@@ -422,8 +422,29 @@ button:disabled {
 <main id="chat">
   <div class="welcome-screen">
     <div class="welcome-orb">🤖</div>
+
     <h2>Hey, I'm Toby AI!</h2>
+
     <p>Your smart AI assistant. Ready to help you explore, learn and create.</p>
+
+    <div class="suggestions">
+      <button onclick="askSuggestion('Explain something to me in simple steps.')">
+        💡 Explain something
+      </button>
+
+      <button onclick="askSuggestion('Help me write something creative.')">
+        ✍️ Help me write
+      </button>
+
+      <button onclick="askSuggestion('Help me with coding.')">
+        💻 Help me code
+      </button>
+
+      <button onclick="askSuggestion('Teach me something interesting.')">
+        🌍 Teach me something
+      </button>
+    </div>
+
   </div>
 </main>
 
