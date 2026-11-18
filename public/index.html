@@ -757,11 +757,21 @@ function speakReply(text) {
 
   window.speechSynthesis.cancel();
 
+  const voices = window.speechSynthesis.getVoices();
+
+  const maleVoice = voices.find(voice =>
+    /male|david|mark|james|guy|daniel/i.test(voice.name)
+  );
+
   const speech = new SpeechSynthesisUtterance(text);
 
   speech.lang = "en-US";
-  speech.rate = 1;
-  speech.pitch = 1;
+  speech.rate = 0.95;
+  speech.pitch = 0.85;
+
+  if (maleVoice) {
+    speech.voice = maleVoice;
+  }
 
   window.speechSynthesis.speak(speech);
 }
