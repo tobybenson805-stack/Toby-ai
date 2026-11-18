@@ -249,16 +249,107 @@ button:disabled {
     padding: 10px;
   }
 }
+/* PREMIUM SIDEBAR */
+
+#menuBtn {
+  background: #211b3c;
+  border: 1px solid #925cff70;
+  margin-right: 8px;
+  padding: 9px 13px;
+}
+
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: -290px;
+  width: 270px;
+  height: 100dvh;
+  padding: 25px 18px;
+  background: linear-gradient(160deg, #17152e, #0c1428);
+  border-right: 1px solid #925cff70;
+  box-shadow: 10px 0 35px #0008;
+  z-index: 1001;
+  transition: left .3s ease;
+}
+
+#sidebar.open {
+  left: 0;
+}
+
+#sidebar h2 {
+  color: #c3a2ff;
+  margin-bottom: 30px;
+}
+
+#sidebar button,
+#sidebar a {
+  display: block;
+  width: 100%;
+  margin: 12px 0;
+  padding: 14px;
+  text-align: left;
+  text-decoration: none;
+  color: white;
+  background: #24213e;
+  border: 1px solid #925cff40;
+  border-radius: 13px;
+  font-size: 15px;
+}
+
+#sidebar button:first-of-type {
+  background: linear-gradient(135deg, #925cff, #397fff);
+}
+
+.sidebar-heading {
+  margin-top: 30px;
+  color: #929bb8;
+  font-size: 11px;
+  letter-spacing: 2px;
+}
+
+.sidebar-footer {
+  position: absolute;
+  bottom: 20px;
+  color: #929bb8;
+  font-size: 12px;
+}
+
+#sidebarOverlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #0009;
+  z-index: 1000;
+}
+
+#sidebarOverlay.show {
+  display: block;
+  }
 </style>
 </head>
 
 <body>
 
 <header>
+  <button id="menuBtn" onclick="toggleSidebar()">☰</button>
   🤖 Toby <span>AI</span>
   <a href="/plans.html">Plans</a>
 </header>
+<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
 
+<aside id="sidebar">
+  <h2>🤖 Toby AI</h2>
+
+  <button onclick="newChat()">＋ New Chat</button>
+
+  <div class="sidebar-heading">YOUR SPACE</div>
+
+  <button onclick="openProfile()">👤 My Profile</button>
+
+  <a href="/plans.html">💎 Plans</a>
+
+  <p class="sidebar-footer">Powered by Toby AI</p>
+</aside>
 <section id="account">
   <h2>Welcome to Toby AI ✨</h2>
   <p id="accountStatus">Loading account service...</p>
