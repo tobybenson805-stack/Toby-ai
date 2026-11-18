@@ -408,7 +408,40 @@ button:disabled {
     <button onclick="logOut()">Log Out</button>
   </div>
 </section>
+<section id="usagePanel" style="
+  display:none;
+  margin:12px 14px;
+  padding:15px;
+  background:#15182c;
+  border:1px solid #925cff70;
+  border-radius:18px;
+">
+  <div style="display:flex;justify-content:space-between">
+    <strong>💎 Free Plan</strong>
+    <span id="usageCount">Loading...</span>
+  </div>
 
+  <div style="
+    height:9px;
+    background:#30344d;
+    border-radius:20px;
+    margin-top:12px;
+    overflow:hidden;
+  ">
+    <div id="usageBar" style="
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg,#925cff,#398dff);
+      border-radius:20px;
+    "></div>
+  </div>
+
+  <p id="usageRemaining" style="
+    color:#aeb8d5;
+    font-size:13px;
+    margin-bottom:0;
+  ">Checking your messages...</p>
+</section>
 <button id="profileBtn" onclick="openProfile()">
   👤 My Profile
 </button>
@@ -484,7 +517,53 @@ const messages = [];
 
 let clerkReady = false;
 let clerkLoading = false;
+// =====================================
+// DAILY MESSAGE COUNTER
+// =====================================
 
+async function loadUsage() {
+  const panel = document.getElementById("usagePanel");
+
+  if (!window.Clerk || !window.Clerk.isSignedIn) {
+    panel.style.display = "none";
+    return;
+  }
+
+  try {
+    const token = await window.Clerk.session.getToken();
+
+    const response = await fetch("/usage", {
+      headers: {
+        "Authorization": `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Usage unavailable");
+    }
+
+    const used = data.used;
+    const limit = data.limit;
+    const remaining = data.remaining;
+    const percentage = Math.min(100, (used / limit) * 100);
+
+    document.getElementById("usageCount").textContent =
+      `${used}/${limit}`;
+
+    document.getElementById("usageBar").style.width =
+      percentage + "%";
+
+    document.getElementById("usageRemaining").textContent =
+      `${remaining} free messages remaining today`;
+
+    panel.style.display = "block";
+
+  } catch (error) {
+    console.error("Usage display error:", error);
+  }
+   }
 // =====================================
 // MESSAGE SYSTEM
 // =====================================
@@ -650,7 +729,7 @@ function renderAccount() {
 
   if (clerk.isSignedIn) {
     status.textContent = "Welcome to Toby AI!";
-
+loadUsage();
     buttons.style.display = "none";
     controls.style.display = "block";
     auth.innerHTML = "";
@@ -869,7 +948,7 @@ async function sendMessage() {
     }
 
     const reply = data.reply || "I couldn't create a reply.";
-
+loadUsage();
     messages.push({
       role: "assistant",
       content: reply
