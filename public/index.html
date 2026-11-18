@@ -2,147 +2,254 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#10131c">
-  <link rel="manifest" href="/manifest.json">
-  <title>Toby AI</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b18">
+<link rel="manifest" href="/manifest.json">
+<title>Toby AI</title>
 
-  <style>
-    * { box-sizing: border-box; }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      background: #10131c;
-      color: white;
-      font-family: Arial, sans-serif;
-    }
+:root {
+  --bg: #080b18;
+  --panel: #11162a;
+  --purple: #925cff;
+  --blue: #398dff;
+  --text: #f7f7ff;
+  --muted: #9ba4c0;
+}
 
-    header {
-      padding: 18px;
-      background: #191f2d;
-      font-size: 22px;
-      font-weight: bold;
-    }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 15% 5%, #38206455, transparent 40%),
+    radial-gradient(ellipse at 90% 45%, #123b7950, transparent 45%),
+    var(--bg);
+  color: var(--text);
+  font-family: Arial, sans-serif;
+}
 
-    header span { color: #63a7ff; }
+header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 18px;
+  background: #10152bea;
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid #ffffff12;
+  font-size: 23px;
+  font-weight: 800;
+}
 
-    header a {
-      float: right;
-      color: white;
-      font-size: 14px;
-    }
+header span {
+  color: #a77aff;
+  text-shadow: 0 0 15px #925cff;
+}
 
-    #chat {
-      padding: 16px;
-      height: calc(100dvh - 145px);
-      overflow-y: auto;
-    }
+header a {
+  float: right;
+  color: #c6b0ff;
+  font-size: 14px;
+  text-decoration: none;
+  padding: 8px 13px;
+  background: #925cff20;
+  border: 1px solid #925cff50;
+  border-radius: 20px;
+}
 
-    .message {
-      padding: 13px;
-      margin: 12px 0;
-      border-radius: 14px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
+#account {
+  margin: 16px 14px;
+  padding: 20px 15px;
+  text-align: center;
+  background: linear-gradient(145deg, #191c37, #10182c);
+  border: 1px solid #8c69ff35;
+  border-radius: 22px;
+  box-shadow: 0 10px 35px #0005;
+}
 
-    .user {
-      background: #245b9d;
-      margin-left: 35px;
-    }
+#account h2 {
+  font-size: 21px;
+  margin-top: 5px;
+}
 
-    .bot {
-      background: #252d3d;
-      margin-right: 35px;
-    }
+#account p {
+  line-height: 1.5;
+}
 
-    .controls {
-      display: flex;
-      gap: 8px;
-      padding: 12px;
-      background: #191f2d;
-      position: fixed;
-      bottom: 0;
-      width: 100%;
-    }
+#accountStatus {
+  color: #bba4ff;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
 
-    input {
-      flex: 1;
-      min-width: 0;
-      padding: 14px;
-      border-radius: 12px;
-      border: 0;
-      background: #30394b;
-      color: white;
-      font-size: 16px;
-    }
+#authButtons,
+#signedInControls {
+  margin-top: 15px;
+}
 
-    button {
-      border: 0;
-      border-radius: 12px;
-      padding: 12px;
-      background: #3988ed;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
+#clerk-auth {
+  max-width: 420px;
+  margin: 20px auto;
+}
 
-    button:disabled { opacity: 0.5; }
+#profileBtn {
+  display: block;
+  margin: 12px 14px;
+  padding: 12px 18px;
+  background: #211b3c;
+  border: 1px solid #925cff70;
+  color: #d9c8ff;
+}
 
-    #account {
-      padding: 20px;
-      text-align: center;
-      background: #191f2d;
-    }
+#profilePanel {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 88%;
+  max-width: 380px;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 24px;
+  border: 1px solid #925cff80;
+  border-radius: 24px;
+  background: #15182c;
+  color: white;
+  box-shadow: 0 0 45px #925cff35;
+  z-index: 9999;
+  text-align: center;
+}
 
-    #clerk-auth {
-      max-width: 420px;
-      margin: 20px auto;
-    }
+#profilePanel button {
+  margin-top: 12px;
+}
 
-    #accountStatus {
-      color: #63a7ff;
-      overflow-wrap: anywhere;
-    }
+#chat {
+  padding: 15px;
+  height: calc(100dvh - 390px);
+  min-height: 220px;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  padding-bottom: 25px;
+}
 
-    #authButtons,
-    #signedInControls {
-      margin-top: 15px;
-    }
+.message {
+  max-width: 88%;
+  padding: 14px 16px;
+  margin: 13px 0;
+  border-radius: 18px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
 
-    #profileBtn {
-      margin: 12px;
-      padding: 12px 18px;
-      background: #635bff;
-    }
+.user {
+  margin-left: auto;
+  background: linear-gradient(135deg, #713cff, #287fe9);
+  border: 1px solid #a98aff55;
+  border-bottom-right-radius: 5px;
+  box-shadow: 0 5px 20px #6239d52b;
+}
 
-    #profilePanel {
-      display: none;
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 85%;
-      max-width: 380px;
-      padding: 22px;
-      border-radius: 18px;
-      background: #171b2b;
-      color: white;
-      z-index: 9999;
-      text-align: center;
-    }
+.bot {
+  margin-right: auto;
+  background: #171e34;
+  border: 1px solid #8295d025;
+  border-bottom-left-radius: 5px;
+}
 
-    #profilePanel button {
-      margin-top: 12px;
-    }
+.controls {
+  display: flex;
+  gap: 9px;
+  padding: 13px;
+  padding-bottom: max(13px, env(safe-area-inset-bottom));
+  background: #101529ed;
+  border-top: 1px solid #ffffff15;
+  backdrop-filter: blur(18px);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  z-index: 30;
+}
 
-    @media (max-width: 400px) {
-      .controls { gap: 5px; }
-      .controls button { padding: 10px; }
-    }
-  </style>
+input {
+  flex: 1;
+  min-width: 0;
+  padding: 15px;
+  border-radius: 18px;
+  border: 1px solid #7184c044;
+  outline: none;
+  background: #1a2138;
+  color: white;
+  font-size: 15px;
+}
+
+input:focus {
+  border-color: #925cff;
+  box-shadow: 0 0 15px #925cff30;
+}
+
+input::placeholder {
+  color: #8993b2;
+}
+
+button {
+  border: 0;
+  border-radius: 15px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #925cff, #397fff);
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px #653bce35;
+}
+
+button:active {
+  transform: scale(.96);
+}
+
+button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+#chatInput button {
+  min-width: 46px;
+}
+
+#authButtons button {
+  margin: 4px;
+}
+
+@media (max-width: 400px) {
+  header {
+    padding: 17px 13px;
+  }
+
+  #chat {
+    padding: 12px;
+    height: calc(100dvh - 370px);
+  }
+
+  .controls {
+    gap: 6px;
+    padding: 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .controls button {
+    padding: 10px;
+  }
+}
+</style>
 </head>
 
 <body>
@@ -153,12 +260,8 @@
 </header>
 
 <section id="account">
-
-  <h2>Welcome to Toby AI 🤖</h2>
-
-  <p id="accountStatus">
-    Loading account service...
-  </p>
+  <h2>Welcome to Toby AI ✨</h2>
+  <p id="accountStatus">Loading account service...</p>
 
   <div id="authButtons" style="display:none">
     <button onclick="showSignUp()">Create Account</button>
@@ -171,7 +274,6 @@
     <p>You're signed in to Toby AI!</p>
     <button onclick="logOut()">Log Out</button>
   </div>
-
 </section>
 
 <button id="profileBtn" onclick="openProfile()">
@@ -187,18 +289,20 @@
 <main id="chat">
   <div class="message bot">
     Hey! I'm Toby AI. 😎
-    What can I help you with today?
+
+    Welcome! What can I help you with today?
   </div>
 </main>
 
 <div class="controls" id="chatInput">
   <input
     id="message"
+    type="text"
     placeholder="Ask Toby anything..."
+    autocomplete="off"
   >
 
   <button id="sendBtn" onclick="sendMessage()">➤</button>
-
   <button onclick="listen()">🎤</button>
 </div>
 
@@ -208,11 +312,11 @@
 // TOBY AI CONFIGURATION
 // =====================================
 
-// Your Clerk PUBLIC publishable key.
-// Never put your Clerk SECRET key here.
+// Keep your existing Clerk PUBLIC key here.
+// Do not put your Clerk SECRET key here.
 
 const CLERK_PUBLISHABLE_KEY =
-  "pk_test_YWR2YW5jZWQtZmlsbHktOTcxOC5jbGVyay5hY2NvdW50cy5kZXYk";
+  "pk_test_ YWR2YW5jZWQtZmlsbHktOTcxOC5jbGVyay5hY2NvdW50cy5kZXYk";
 
 // =====================================
 // TOBY AI VARIABLES
@@ -238,7 +342,6 @@ function addMessage(text, type) {
   div.textContent = text;
 
   chat.appendChild(div);
-
   chat.scrollTop = chat.scrollHeight;
 }
 
@@ -247,9 +350,7 @@ function addMessage(text, type) {
 // =====================================
 
 function loadScript(src, publishableKey = null) {
-
   return new Promise((resolve, reject) => {
-
     const script = document.createElement("script");
 
     let finished = false;
@@ -259,11 +360,9 @@ function loadScript(src, publishableKey = null) {
     }, 20000);
 
     function finish(error) {
-
       if (finished) return;
 
       finished = true;
-
       clearTimeout(timeout);
 
       if (error) {
@@ -286,14 +385,13 @@ function loadScript(src, publishableKey = null) {
     }
 
     script.onload = () => finish();
+
     script.onerror = () => {
       finish(new Error("Could not load Clerk script."));
     };
 
     document.head.appendChild(script);
-
   });
-
 }
 
 // =====================================
@@ -301,7 +399,6 @@ function loadScript(src, publishableKey = null) {
 // =====================================
 
 async function loadClerk() {
-
   if (clerkLoading || clerkReady) return;
 
   clerkLoading = true;
@@ -309,18 +406,17 @@ async function loadClerk() {
   const status = document.getElementById("accountStatus");
 
   try {
-
     status.textContent = "Checking Clerk configuration...";
 
     if (
       !CLERK_PUBLISHABLE_KEY ||
-      !CLERK_PUBLISHABLE_KEY.startsWith("pk_test_") &&
-      !CLERK_PUBLISHABLE_KEY.startsWith("pk_live_")
+      (
+        !CLERK_PUBLISHABLE_KEY.startsWith("pk_test_") &&
+        !CLERK_PUBLISHABLE_KEY.startsWith("pk_live_")
+      )
     ) {
       throw new Error("Invalid Clerk Publishable Key.");
     }
-
-    // Get Clerk Frontend API domain.
 
     let clerkDomain;
 
@@ -338,15 +434,11 @@ async function loadClerk() {
 
     status.textContent = "Loading Clerk UI...";
 
-    // Load official Clerk UI bundle.
-
     await loadScript(
       `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`
     );
 
     status.textContent = "Loading Clerk SDK...";
-
-    // Load official Clerk JavaScript SDK.
 
     await loadScript(
       `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,
@@ -358,8 +450,6 @@ async function loadClerk() {
     }
 
     status.textContent = "Connecting your account...";
-
-    // Initialize Clerk.
 
     await window.Clerk.load({
       ui: {
@@ -379,20 +469,15 @@ async function loadClerk() {
     });
 
   } catch (error) {
-
     clerkLoading = false;
-
     clerkReady = false;
 
     console.error("Toby AI Clerk error:", error);
 
-    status.textContent =
-      "Account error: " + error.message;
+    status.textContent = "Account error: " + error.message;
 
     document.getElementById("authButtons").style.display = "none";
-
   }
-
 }
 
 // =====================================
@@ -400,13 +485,9 @@ async function loadClerk() {
 // =====================================
 
 function renderAccount() {
-
   const status = document.getElementById("accountStatus");
-
   const buttons = document.getElementById("authButtons");
-
   const controls = document.getElementById("signedInControls");
-
   const auth = document.getElementById("clerk-auth");
 
   const clerk = window.Clerk;
@@ -414,25 +495,18 @@ function renderAccount() {
   if (!clerkReady || !clerk) return;
 
   if (clerk.isSignedIn) {
-
     status.textContent = "Welcome to Toby AI!";
 
     buttons.style.display = "none";
-
     controls.style.display = "block";
-
     auth.innerHTML = "";
 
   } else {
-
     status.textContent = "Sign in or create your account.";
 
     buttons.style.display = "block";
-
     controls.style.display = "none";
-
   }
-
 }
 
 // =====================================
@@ -440,7 +514,6 @@ function renderAccount() {
 // =====================================
 
 function showSignUp() {
-
   if (!clerkReady || !window.Clerk) return;
 
   const auth = document.getElementById("clerk-auth");
@@ -448,17 +521,11 @@ function showSignUp() {
   auth.innerHTML = "";
 
   try {
-
     window.Clerk.mountSignUp(auth);
-
   } catch (error) {
-
     console.error(error);
-
     addMessage("Could not open sign-up. Please try again.", "bot");
-
   }
-
 }
 
 // =====================================
@@ -466,7 +533,6 @@ function showSignUp() {
 // =====================================
 
 function showSignIn() {
-
   if (!clerkReady || !window.Clerk) return;
 
   const auth = document.getElementById("clerk-auth");
@@ -474,17 +540,11 @@ function showSignIn() {
   auth.innerHTML = "";
 
   try {
-
     window.Clerk.mountSignIn(auth);
-
   } catch (error) {
-
     console.error(error);
-
     addMessage("Could not open login. Please try again.", "bot");
-
   }
-
 }
 
 // =====================================
@@ -492,27 +552,20 @@ function showSignIn() {
 // =====================================
 
 async function logOut() {
-
   if (!clerkReady || !window.Clerk) return;
 
   try {
-
     await window.Clerk.signOut();
 
     document.getElementById("clerk-auth").innerHTML = "";
 
     closeProfile();
-
     renderAccount();
 
   } catch (error) {
-
     console.error(error);
-
     addMessage("Could not log out. Please try again.", "bot");
-
   }
-
 }
 
 // =====================================
@@ -520,23 +573,16 @@ async function logOut() {
 // =====================================
 
 function openProfile() {
-
   const panel = document.getElementById("profilePanel");
-
   const profile = document.getElementById("clerkProfile");
-
   const clerk = window.Clerk;
 
   if (!clerkReady || !clerk || !clerk.user) {
-
     alert("Please log in first.");
-
     return;
-
   }
 
   panel.style.display = "block";
-
   profile.innerHTML = "";
 
   const user = clerk.user;
@@ -544,21 +590,16 @@ function openProfile() {
   const avatar = document.createElement("img");
 
   avatar.src = user.imageUrl || "";
-
   avatar.alt = "Profile picture";
-
   avatar.style.width = "85px";
-
   avatar.style.height = "85px";
-
   avatar.style.borderRadius = "50%";
+  avatar.style.objectFit = "cover";
 
   const name = document.createElement("h3");
-
   name.textContent = user.fullName || "Toby AI User";
 
   const username = document.createElement("p");
-
   username.textContent = "@" + (user.username || "no-username");
 
   const email = document.createElement("p");
@@ -567,19 +608,11 @@ function openProfile() {
     ? user.primaryEmailAddress.emailAddress
     : "No email available";
 
-  profile.append(
-    avatar,
-    name,
-    username,
-    email
-  );
-
+  profile.append(avatar, name, username, email);
 }
 
 function closeProfile() {
-
   document.getElementById("profilePanel").style.display = "none";
-
 }
 
 // =====================================
@@ -587,7 +620,6 @@ function closeProfile() {
 // =====================================
 
 function speakReply(text) {
-
   if (!("speechSynthesis" in window)) return;
 
   window.speechSynthesis.cancel();
@@ -595,13 +627,10 @@ function speakReply(text) {
   const speech = new SpeechSynthesisUtterance(text);
 
   speech.lang = "en-US";
-
   speech.rate = 1;
-
   speech.pitch = 1;
 
   window.speechSynthesis.speak(speech);
-
 }
 
 // =====================================
@@ -609,20 +638,13 @@ function speakReply(text) {
 // =====================================
 
 async function sendMessage() {
-
   const text = input.value.trim();
 
   if (!text || sendBtn.disabled) return;
 
   if (!clerkReady || !window.Clerk || !window.Clerk.isSignedIn) {
-
-    addMessage(
-      "Please log in before chatting.",
-      "bot"
-    );
-
+    addMessage("Please log in before chatting.", "bot");
     return;
-
   }
 
   input.value = "";
@@ -637,7 +659,6 @@ async function sendMessage() {
   sendBtn.disabled = true;
 
   try {
-
     const token = await window.Clerk.session.getToken();
 
     if (!token) {
@@ -645,18 +666,12 @@ async function sendMessage() {
     }
 
     const response = await fetch("/chat", {
-
       method: "POST",
-
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
       },
-
-      body: JSON.stringify({
-        messages
-      })
-
+      body: JSON.stringify({ messages })
     });
 
     const data = await response.json();
@@ -677,7 +692,6 @@ async function sendMessage() {
     speakReply(reply);
 
   } catch (error) {
-
     console.error("Toby AI error:", error);
 
     addMessage(
@@ -686,11 +700,8 @@ async function sendMessage() {
     );
 
   } finally {
-
     sendBtn.disabled = false;
-
   }
-
 }
 
 // =====================================
@@ -698,11 +709,9 @@ async function sendMessage() {
 // =====================================
 
 input.addEventListener("keydown", event => {
-
   if (event.key === "Enter") {
     sendMessage();
   }
-
 });
 
 // =====================================
@@ -710,47 +719,36 @@ input.addEventListener("keydown", event => {
 // =====================================
 
 function listen() {
-
   const SpeechRecognition =
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-
     addMessage(
       "Voice input isn't supported here. Try your keyboard microphone.",
       "bot"
     );
-
     return;
-
   }
 
   const recognition = new SpeechRecognition();
 
   recognition.lang = "en-US";
-
   recognition.interimResults = false;
 
   recognition.onresult = event => {
-
     input.value = event.results[0][0].transcript;
-
     sendMessage();
-
   };
 
   recognition.onerror = () => {
-
     addMessage(
       "Microphone error. Please try again.",
       "bot"
     );
-
   };
 
   recognition.start();
-
 }
 
 // =====================================
@@ -763,4 +761,3 @@ loadClerk();
 
 </body>
 </html>
- 
