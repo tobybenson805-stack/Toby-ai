@@ -908,15 +908,16 @@ function toggleSidebar() {
 function newChat() {
   messages.length = 0;
 
-  chat.innerHTML = "";
-
-  addMessage(
-    "Hey! I'm Toby AI. 😎\n\nWelcome! What can I help you with today?",
-    "bot"
-  );
+  chat.innerHTML = `
+    <div class="welcome-screen">
+      <div class="welcome-orb">🤖</div>
+      <h2>Hey, I'm Toby AI!</h2>
+      <p>Your smart AI assistant. Ready to help you explore, learn and create.</p>
+    </div>
+  `;
 
   toggleSidebar();
-  }
+}
 </script>
 
 </body>
