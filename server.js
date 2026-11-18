@@ -200,7 +200,91 @@ app.post("/chat", async (req, res) => {
     });
   }
 });
+// Generate natural Toby AI voice.
+app.post("/speak", async (req, res) => {
+  try {
+    const auth = getAuth(req);
 
+    if (!auth.isAuthenticated || !auth.userId) {
+      return res.status(401).json({
+        error: "Please log in first."
+      });
+    }
+
+    const text = req.body.text;
+
+    if (typeof text !== "string" || !text.trim()) {
+      return res.status(400).json({
+        error: "No text provided."
+      });
+    }
+
+    const response = await fetch(
+      "https://generativelanguage.googleapis.com/v1beta/interactions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": process.env.GEMINI_API_KEY
+        },
+        body: JSON.stringify({
+          model: "gemini-3.8-flash-lite-tts",
+          input: [{
+            type: "user_input",
+            content: [{
+              type: "text",
+              text: text.slice(0, 2000),
+              annotations: [{
+                type: "speech_metadata",
+                style: "Friendly, warm, natural, relaxed male conversational voice. Speak clearly and naturally."
+              }]
+            }]
+          }],
+          response_format: {
+            type: "audio"
+          },
+          generation_config: {
+            speech_config: [
+              { voice: "Puck" }
+            ]
+          }
+        })
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Voice API error:", result);
+      return res.status(502).json({
+        error: "Voice generation failed."
+      });
+    }
+
+    const audio = (result.steps || [])
+      .filter(step => step.type === "model_output")
+      .flatMap(step => step.content || [])
+      .find(part => part.type === "audio" && part.data);
+
+    if (!audio) {
+      return res.status(502).json({
+        error: "No audio was generated."
+      });
+    }
+
+    res.json({
+      audio: audio.data,
+      mimeType: "audio/wav"
+    });
+
+  } catch (error) {
+    console.error("Voice error:", error);
+
+    res.status(500).json({
+      error: "Could not generate Toby's voice."
+    });
+  }
+});
 // Check server and database.
 app.get("/health", async (req, res) => {
   try {
