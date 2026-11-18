@@ -325,6 +325,48 @@ button:disabled {
 #sidebarOverlay.show {
   display: block;
   }
+/* TOBY AI ANIMATED WELCOME */
+
+.welcome-screen {
+  text-align: center;
+  padding: 35px 15px;
+  animation: welcomeFade 1s ease;
+}
+
+.welcome-orb {
+  width: 90px;
+  height: 90px;
+  margin: 10px auto 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #925cff, #397fff);
+  box-shadow: 0 0 25px #925cff, 0 0 55px #397fff80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 42px;
+  animation: orbFloat 3s ease-in-out infinite;
+}
+
+.welcome-screen h2 {
+  color: white;
+  font-size: 25px;
+  margin-bottom: 10px;
+}
+
+.welcome-screen p {
+  color: #aeb8d5;
+  font-size: 14px;
+}
+
+@keyframes orbFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes welcomeFade {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 </style>
 </head>
 
@@ -407,7 +449,7 @@ button:disabled {
 // Do not put your Clerk SECRET key here.
 
 const CLERK_PUBLISHABLE_KEY =
-  "pk_test_ YWR2YW5jZWQtZmlsbHktOTcxOC5jbGVyay5hY2NvdW50cy5kZXYk";
+  "pk_test_YWR2YW5jZWQtZmlsbHktOTcxOC5jbGVyay5hY2NvdW50cy5kZXYk";
 
 // =====================================
 // TOBY AI VARIABLES
