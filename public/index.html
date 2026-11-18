@@ -249,17 +249,21 @@ async function sendMessage() {
   
   try {  
   
-    const response = await fetch("/chat", {  
-      method: "POST",  
-  
-      headers: {  
-        "Content-Type": "application/json"  
-      },  
-  
-      body: JSON.stringify({  
-        messages  
-      })  
-    });  
+    const { data: sessionData, error: sessionError } =
+  await window.tobySupabase.auth.getSession();
+
+if (sessionError || !sessionData.session) {
+  throw new Error("Please log in before chatting.");
+}
+
+const response = await fetch("/chat", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${sessionData.session.access_token}`
+  },
+  body: JSON.stringify({ messages })
+});
   
     const data = await response.json();  
   
