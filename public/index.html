@@ -847,7 +847,34 @@ function listen() {
 // =====================================
 
 loadClerk();
+// =====================================
+// TOBY AI SIDEBAR
+// =====================================
 
+function toggleSidebar() {
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebarOverlay");
+
+  sidebar.classList.toggle("open");
+  overlay.classList.toggle("show");
+}
+
+// =====================================
+// START A NEW CHAT
+// =====================================
+
+function newChat() {
+  messages.length = 0;
+
+  chat.innerHTML = "";
+
+  addMessage(
+    "Hey! I'm Toby AI. 😎\n\nWelcome! What can I help you with today?",
+    "bot"
+  );
+
+  toggleSidebar();
+  }
 </script>
 
 </body>
