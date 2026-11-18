@@ -2,27 +2,27 @@
 require("dotenv").config();
 
 const express = require("express");
-const { clerkMiddleware, requireAuth, getAuth } = require("@clerk/express");
-const { GoogleGenAI } = require("@google/genai");
 const path = require("path");
+const { GoogleGenAI } = require("@google/genai");
+const { clerkMiddleware, getAuth } = require("@clerk/express");
 
 const app = express();
 
-app.use(express.json({ limit: "1mb" }));
-
+// Clerk middleware must run before other middleware.
 app.use(clerkMiddleware());
 
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
 
-app.post("/chat", requireAuth(), async (req, res) => {
+app.post("/chat", async (req, res) => {
   try {
-    const { userId } = getAuth(req);
+    const auth = getAuth(req);
 
-    if (!userId) {
+    if (!auth.isAuthenticated || !auth.userId) {
       return res.status(401).json({
         error: "Please log in first."
       });
