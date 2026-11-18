@@ -304,7 +304,32 @@ app.get("/history", async (req, res) => {
     });
   }
 });
+// =====================================
+// CHECK DAILY MESSAGE USAGE
+// =====================================
 
+app.get("/usage", async (req, res) => {
+  try {
+    const userId = requireLogin(req, res);
+    if (!userId) return;
+
+    const used = await checkDailyUsage(userId);
+
+    res.json({
+      plan: "Free",
+      used,
+      limit: FREE_DAILY_LIMIT,
+      remaining: Math.max(0, FREE_DAILY_LIMIT - used)
+    });
+
+  } catch (error) {
+    console.error("Usage check error:", error.message);
+
+    res.status(500).json({
+      error: "Could not load message usage."
+    });
+  }
+});
 // =====================================
 // CHAT WITH TOBY AI AND SAVE CONVERSATION
 // =====================================
