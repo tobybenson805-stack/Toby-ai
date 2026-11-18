@@ -950,16 +950,13 @@ function newChat() {
   toggleSidebar();
 }
 function askSuggestion(question) {
-  const inputBox = document.getElementById("messageInput");
+  const inputBox = document.getElementById("message");
 
-  if (!inputBox) {
-    alert("Chat input not found.");
-    return;
-  }
+  if (!inputBox) return;
 
   inputBox.value = question;
   sendMessage();
- }
+}
 </script>
 
 </body>
