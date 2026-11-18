@@ -113,19 +113,40 @@ app.post("/chat", async (req, res) => {
       }
     });
 
-    const reply = response.text || "I couldn't create a reply.";
+    let response;
+let lastError;
 
-    await db.query(
-      `INSERT INTO chat_messages (clerk_user_id, role, content)
-       VALUES ($1, $2, $3), ($1, $4, $5)`,
-      [
-        auth.userId,
-        "user",
-        String(lastUserMessage.content).slice(0, 4000),
-        "assistant",
-        reply.slice(0, 4000)
-      ]
+for (let attempt = 1; attempt <= 3; attempt++) {
+  try {
+    response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: conversation,
+      config: {
+        systemInstruction:
+          "You are Toby AI, a friendly and helpful assistant. Speak English. Explain schoolwork simply and step by step. Be respectful."
+      }
+    });
+
+    break;
+  } catch (error) {
+    lastError = error;
+
+    const status = error.status || error.code;
+
+    if (![429, 500, 502, 503, 504].includes(Number(status)) ||
+        attempt === 3) {
+      throw error;
+    }
+
+    await new Promise(resolve =>
+      setTimeout(resolve, attempt * 2000)
     );
+  }
+}
+
+if (!response) throw lastError;
+
+const reply = response.text || "I couldn't create a reply.";
 
     res.json({ reply });
 
