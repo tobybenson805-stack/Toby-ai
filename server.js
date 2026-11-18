@@ -27,7 +27,38 @@ const db = new Pool({
   max: 5,
   connectionTimeoutMillis: 15000
 });
+// =====================================
+// TOBY AI FREE PLAN
+// =====================================
 
+const FREE_DAILY_LIMIT = 30;
+
+async function checkDailyUsage(userId) {
+  const result = await db.query(
+    `INSERT INTO daily_usage (clerk_user_id, usage_date, message_count)
+     VALUES ($1, CURRENT_DATE, 0)
+     ON CONFLICT (clerk_user_id, usage_date)
+     DO UPDATE SET message_count = daily_usage.message_count
+     RETURNING message_count`,
+    [userId]
+  );
+
+  return result.rows[0].message_count;
+}
+
+async function increaseDailyUsage(userId) {
+  const result = await db.query(
+    `UPDATE daily_usage
+     SET message_count = message_count + 1
+     WHERE clerk_user_id = $1
+       AND usage_date = CURRENT_DATE
+       AND message_count < $2
+     RETURNING message_count`,
+    [userId, FREE_DAILY_LIMIT]
+  );
+
+  return result.rows.length > 0;
+}
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
 });
