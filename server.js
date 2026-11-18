@@ -56,7 +56,15 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
-
+  // Track each user's daily AI message usage.
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS daily_usage (
+      clerk_user_id TEXT NOT NULL,
+      usage_date DATE NOT NULL DEFAULT CURRENT_DATE,
+      message_count INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (clerk_user_id, usage_date)
+    )
+  `);
   await db.query(`
     ALTER TABLE chat_messages
     ADD COLUMN IF NOT EXISTS conversation_id BIGINT
