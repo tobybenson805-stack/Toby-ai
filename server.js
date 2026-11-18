@@ -57,7 +57,7 @@ async function increaseDailyUsage(userId) {
     [userId, FREE_DAILY_LIMIT]
   );
 
-  return result.rows.length > 0;
+  return result.rows[0] || null;
 }
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY
