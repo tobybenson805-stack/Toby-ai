@@ -170,76 +170,83 @@
     chat.scrollTop = chat.scrollHeight;
   }
 
-  async function loadClerk() {
-    const status = document.getElementById("accountStatus");
+  
+async function loadClerk() {
+  const status = document.getElementById("accountStatus");
 
-    try {
-      if (
-        !CLERK_PUBLISHABLE_KEY ||
-        CLERK_PUBLISHABLE_KEY.includes("PASTE_YOUR")
-      ) {
-        throw new Error("Add your Clerk publishable key first.");
-      }
+  try {
+    status.textContent = "Loading Clerk UI...";
 
-      const clerkDomain = atob(
-        CLERK_PUBLISHABLE_KEY.split("_")[2]
-      ).slice(0, -1);
+    const clerkDomain = atob(
+      CLERK_PUBLISHABLE_KEY.split("_")[2]
+    ).slice(0, -1);
 
-      // Load Clerk's user interface.
-      await new Promise((resolve, reject) => {
-        const script = document.createElement("script");
+    // Load Clerk UI
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
 
-        script.src =
-          `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`;
+      script.src =
+        `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`;
 
-        script.async = true;
-        script.crossOrigin = "anonymous";
-        script.onload = resolve;
-        script.onerror = reject;
+      script.async = true;
+      script.crossOrigin = "anonymous";
+      script.onload = resolve;
+      script.onerror = () =>
+        reject(new Error("Clerk UI could not load. Check your internet."));
 
-        document.head.appendChild(script);
-      });
+      document.head.appendChild(script);
+    });
 
-      // Load Clerk JavaScript.
-      await new Promise((resolve, reject) => {
-        const script = document.createElement("script");
+    status.textContent = "Loading Clerk SDK...";
 
-        script.src =
-          `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`;
+    // Load Clerk SDK
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
 
-        script.async = true;
-        script.crossOrigin = "anonymous";
-        script.setAttribute(
-          "data-clerk-publishable-key",
-          CLERK_PUBLISHABLE_KEY
-        );
+      script.src =
+        `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`;
 
-        script.onload = resolve;
-        script.onerror = reject;
+      script.async = true;
+      script.crossOrigin = "anonymous";
 
-        document.head.appendChild(script);
-      });
+      script.setAttribute(
+        "data-clerk-publishable-key",
+        CLERK_PUBLISHABLE_KEY
+      );
 
-      await Clerk.load({
-        ui: {
-          ClerkUI: window.__internal_ClerkUICtor
-        }
-      });
+      script.onload = resolve;
+      script.onerror = () =>
+        reject(new Error("Clerk SDK could not load."));
 
-      clerkReady = true;
+      document.head.appendChild(script);
+    });
 
-      renderAccount();
-
-      Clerk.addListener(() => {
-        renderAccount();
-      });
-
-    } catch (error) {
-      console.error("Clerk error:", error);
-      status.textContent =
-        "Account setup problem: " + error.message;
+    if (!window.Clerk) {
+      throw new Error("Clerk SDK loaded, but Clerk was not initialized.");
     }
+
+    status.textContent = "Connecting your account...";
+
+    await window.Clerk.load({
+      ui: {
+        ClerkUI: window.__internal_ClerkUICtor
+      }
+    });
+
+    clerkReady = true;
+
+    renderAccount();
+
+    window.Clerk.addListener(() => {
+      renderAccount();
+    });
+
+  } catch (error) {
+    console.error("Clerk error:", error);
+
+    status.textContent = "Account error: " + error.message;
   }
+}
 
   function renderAccount() {
     const status = document.getElementById("accountStatus");
