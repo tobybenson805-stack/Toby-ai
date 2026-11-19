@@ -186,21 +186,67 @@ function requireLogin(req, res) {
 // GEMINI AI
 // =====================================
 
-async function generateTobyReply(conversation) {
+
+async function generateTobyReply(conversation, attachment = null) {
   let lastError;
+
+  let contents = conversation;
+
+  if (attachment) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+      "text/plain"
+    ];
+
+    if (
+      !allowedTypes.includes(attachment.mimeType) ||
+      typeof attachment.data !== "string" ||
+      attachment.data.length > 7 * 1024 * 1024
+    ) {
+      throw new Error("Invalid or oversized attachment.");
+    }
+
+    if (attachment.mimeType === "text/plain") {
+      const fileText = Buffer.from(
+        attachment.data,
+        "base64"
+      ).toString("utf8");
+
+      contents = conversation +
+        "\n\nAttached text file:\n" + fileText;
+
+    } else {
+      contents = [{
+        role: "user",
+        parts: [
+          { text: conversation },
+          {
+            inlineData: {
+              mimeType: attachment.mimeType,
+              data: attachment.data
+            }
+          }
+        ]
+      }];
+    }
+  }
 
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash-lite",
-        contents: conversation,
+        contents,
         config: {
           systemInstruction:
-            "You are Toby AI, a friendly and helpful assistant. Speak English. Explain schoolwork simply and step by step. Be respectful."
+            "You are Toby AI, a friendly and helpful assistant. Speak English. Explain schoolwork simply and step by step. Be respectful. When a user uploads an image or document, examine it and answer their question about it."
         }
       });
 
       return response.text || "I couldn't create a reply.";
+
     } catch (error) {
       lastError = error;
 
@@ -225,6 +271,7 @@ async function generateTobyReply(conversation) {
 
   throw lastError;
 }
+
 
 // =====================================
 // LIST USER CONVERSATIONS
@@ -430,8 +477,10 @@ app.post("/chat", async (req, res) => {
     let reply;
 
     try {
-      reply = await generateTobyReply(conversationText);
-    } catch (error) {
+      reply = await generateTobyReply(
+  conversationText,
+  req.body.attachment || null
+);
       // Give the message slot back if AI generation fails.
       await db.query(
         `UPDATE daily_usage
