@@ -1264,7 +1264,12 @@ async function sendMessage() {
     }
 
     selectedAttachment = null;
+const preview = document.getElementById("attachmentPreview");
 
+if (preview) {
+  preview.innerHTML = "";
+  preview.style.display = "none";
+    }
     document.getElementById("filePicker").value = "";
     document.getElementById("cameraPicker").value = "";
     document.getElementById("galleryPicker").value = "";
