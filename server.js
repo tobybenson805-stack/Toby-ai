@@ -536,6 +536,48 @@ app.post("/chat", async (req, res) => {
   }
 });
 
+app.post("/generate-image", async (req, res) => {
+  try {
+    const userId = requireLogin(req, res);
+    if (!userId) return;
+
+    const prompt = req.body.prompt;
+
+    if (
+      typeof prompt !== "string" ||
+      !prompt.trim() ||
+      prompt.length > 1000
+    ) {
+      return res.status(400).json({
+        error: "Enter an image description of up to 1000 characters."
+      });
+    }
+
+    const result = await ai.interactions.create({
+      model: "gemini-3.1-flash-image",
+      input: prompt.trim()
+    });
+
+    if (!result.output_image || !result.output_image.data) {
+      return res.status(502).json({
+        error: "Gemini could not generate an image."
+      });
+    }
+
+    res.json({
+      image: result.output_image.data,
+      mimeType: "image/png"
+    });
+
+  } catch (error) {
+    console.error("Image generation error:", error);
+
+    res.status(500).json({
+      error: "Image generation failed. Please try again."
+    });
+  }
+});
+
 // =====================================
 // NATURAL TOBY AI VOICE
 // =====================================
