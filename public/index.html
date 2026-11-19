@@ -140,9 +140,11 @@ header a {
   height: auto;
   padding: 15px;
   padding-bottom: 120px;
-  overflow-y: scroll;
+  overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior: contain;
+  touch-action: pan-y pinch-zoom;
+  overscroll-behavior-y: contain;
   scroll-behavior: smooth;
 }
 
