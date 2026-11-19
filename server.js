@@ -9,9 +9,12 @@ const { clerkMiddleware, getAuth } = require("@clerk/express");
 
 const app = express();
 
-app.use(clerkMiddleware());
-app.use(express.json({ limit: "10mb" }));
-app.use(express.static(path.join(__dirname, "public")));
+// =====================================
+// CONFIGURATION
+// =====================================
+
+const PORT = process.env.PORT || 3000;
+const FREE_DAILY_LIMIT = 30;
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL is missing.");
@@ -27,44 +30,24 @@ const db = new Pool({
   max: 5,
   connectionTimeoutMillis: 15000
 });
-// =====================================
-// TOBY AI FREE PLAN
-// =====================================
 
-const FREE_DAILY_LIMIT = 30;
-
-async function checkDailyUsage(userId) {
-  const result = await db.query(
-    `INSERT INTO daily_usage (clerk_user_id, usage_date, message_count)
-     VALUES ($1, CURRENT_DATE, 0)
-     ON CONFLICT (clerk_user_id, usage_date)
-     DO UPDATE SET message_count = daily_usage.message_count
-     RETURNING message_count`,
-    [userId]
-  );
-
-  return result.rows[0].message_count;
-}
-
-async function increaseDailyUsage(userId) {
-  const result = await db.query(
-    `UPDATE daily_usage
-     SET message_count = message_count + 1
-     WHERE clerk_user_id = $1
-       AND usage_date = CURRENT_DATE
-       AND message_count < $2
-     RETURNING message_count`,
-    [userId, FREE_DAILY_LIMIT]
-  );
-
-  return result.rows[0] || null;
-}
 const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
+  apiKey: process.env.GEMINI_API_KEY,
+  httpOptions: {
+    apiVersion: "v1beta"
+  }
 });
 
 // =====================================
-// DATABASE SETUP AND OLD CHAT MIGRATION
+// EXPRESS MIDDLEWARE
+// =====================================
+
+app.use(clerkMiddleware());
+app.use(express.json({ limit: "12mb" }));
+app.use(express.static(path.join(__dirname, "public")));
+
+// =====================================
+// DATABASE SETUP
 // =====================================
 
 async function initializeDatabase() {
@@ -87,7 +70,7 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `);
-  // Track each user's daily AI message usage.
+
   await db.query(`
     CREATE TABLE IF NOT EXISTS daily_usage (
       clerk_user_id TEXT NOT NULL,
@@ -96,6 +79,7 @@ async function initializeDatabase() {
       PRIMARY KEY (clerk_user_id, usage_date)
     )
   `);
+
   await db.query(`
     ALTER TABLE chat_messages
     ADD COLUMN IF NOT EXISTS conversation_id BIGINT
@@ -112,7 +96,7 @@ async function initializeDatabase() {
     ON chat_messages (conversation_id, created_at)
   `);
 
-  // Keep older messages by placing them in one Previous chat.
+  // Move older messages into a Previous chat.
   const oldUsers = await db.query(`
     SELECT DISTINCT clerk_user_id
     FROM chat_messages
@@ -134,10 +118,10 @@ async function initializeDatabase() {
         [user.clerk_user_id]
       );
 
-      const firstUserMessage = oldMessages.rows[0]?.content || "";
+      const firstMessage = oldMessages.rows[0]?.content || "";
 
-      const title = firstUserMessage
-        ? firstUserMessage.slice(0, 45)
+      const title = firstMessage
+        ? firstMessage.slice(0, 45)
         : "Previous chat";
 
       const conversation = await client.query(
@@ -156,9 +140,11 @@ async function initializeDatabase() {
       );
 
       await client.query("COMMIT");
+
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
+
     } finally {
       client.release();
     }
@@ -168,14 +154,17 @@ async function initializeDatabase() {
 }
 
 // =====================================
-// AUTHENTICATION HELPER
+// AUTHENTICATION
 // =====================================
 
 function requireLogin(req, res) {
   const auth = getAuth(req);
 
   if (!auth.isAuthenticated || !auth.userId) {
-    res.status(401).json({ error: "Please log in first." });
+    res.status(401).json({
+      error: "Please log in first."
+    });
+
     return null;
   }
 
@@ -183,13 +172,52 @@ function requireLogin(req, res) {
 }
 
 // =====================================
-// GEMINI AI
+// DAILY USAGE
 // =====================================
 
+async function checkDailyUsage(userId) {
+  const result = await db.query(
+    `INSERT INTO daily_usage
+       (clerk_user_id, usage_date, message_count)
+     VALUES ($1, CURRENT_DATE, 0)
+     ON CONFLICT (clerk_user_id, usage_date)
+     DO UPDATE SET message_count = daily_usage.message_count
+     RETURNING message_count`,
+    [userId]
+  );
+
+  return Number(result.rows[0].message_count);
+}
+
+async function increaseDailyUsage(userId) {
+  const result = await db.query(
+    `UPDATE daily_usage
+     SET message_count = message_count + 1
+     WHERE clerk_user_id = $1
+       AND usage_date = CURRENT_DATE
+       AND message_count < $2
+     RETURNING message_count`,
+    [userId, FREE_DAILY_LIMIT]
+  );
+
+  return result.rows[0] || null;
+}
+
+async function refundDailyUsage(userId) {
+  await db.query(
+    `UPDATE daily_usage
+     SET message_count = GREATEST(message_count - 1, 0)
+     WHERE clerk_user_id = $1
+       AND usage_date = CURRENT_DATE`,
+    [userId]
+  );
+}
+
+// =====================================
+// GEMINI CHAT
+// =====================================
 
 async function generateTobyReply(conversation, attachment = null) {
-  let lastError;
-
   let contents = conversation;
 
   if (attachment) {
@@ -215,37 +243,46 @@ async function generateTobyReply(conversation, attachment = null) {
         "base64"
       ).toString("utf8");
 
-      contents = conversation +
-        "\n\nAttached text file:\n" + fileText;
+      contents =
+        conversation +
+        "\n\nAttached text file:\n" +
+        fileText.slice(0, 100000);
 
     } else {
-      contents = [{
-        role: "user",
-        parts: [
-          { text: conversation },
-          {
-            inlineData: {
-              mimeType: attachment.mimeType,
-              data: attachment.data
+      contents = [
+        {
+          role: "user",
+          parts: [
+            { text: conversation },
+            {
+              inlineData: {
+                mimeType: attachment.mimeType,
+                data: attachment.data
+              }
             }
-          }
-        ]
-      }];
+          ]
+        }
+      ];
     }
   }
+
+  let lastError;
 
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3.5-flash-lite",
+        model: "gemini-2.5-flash",
         contents,
         config: {
           systemInstruction:
-            "You are Toby AI, a friendly and helpful assistant. Speak English. Explain schoolwork simply and step by step. Be respectful. When a user uploads an image or document, examine it and answer their question about it."
+            "You are Toby AI, a friendly and helpful AI assistant. " +
+            "Speak clearly in English. Explain schoolwork simply and step by step. " +
+            "Be respectful, accurate, and helpful. " +
+            "When a user uploads an image or document, examine it and answer their question."
         }
       });
 
-      return response.text || "I couldn't create a reply.";
+      return response.text || "I couldn't create a reply. Please try again.";
 
     } catch (error) {
       lastError = error;
@@ -257,7 +294,10 @@ async function generateTobyReply(conversation, attachment = null) {
         [429, 500, 502, 503, 504].includes(status) ||
         message.includes("UNAVAILABLE");
 
-      console.error(`Gemini attempt ${attempt} failed:`, message);
+      console.error(
+        `Gemini attempt ${attempt} failed:`,
+        message
+      );
 
       if (!temporaryError || attempt === 3) {
         throw error;
@@ -272,9 +312,8 @@ async function generateTobyReply(conversation, attachment = null) {
   throw lastError;
 }
 
-
 // =====================================
-// LIST USER CONVERSATIONS
+// LIST CONVERSATIONS
 // =====================================
 
 app.get("/conversations", async (req, res) => {
@@ -291,9 +330,13 @@ app.get("/conversations", async (req, res) => {
       [userId]
     );
 
-    res.json({ conversations: result.rows });
+    res.json({
+      conversations: result.rows
+    });
+
   } catch (error) {
     console.error("Conversations error:", error.message);
+
     res.status(500).json({
       error: "Could not load your conversations."
     });
@@ -301,7 +344,7 @@ app.get("/conversations", async (req, res) => {
 });
 
 // =====================================
-// LOAD ONE CONVERSATION
+// LOAD CHAT HISTORY
 // =====================================
 
 app.get("/history", async (req, res) => {
@@ -311,7 +354,10 @@ app.get("/history", async (req, res) => {
 
     const conversationId = req.query.conversationId;
 
-    if (!conversationId || !/^\d+$/.test(String(conversationId))) {
+    if (
+      !conversationId ||
+      !/^\d+$/.test(String(conversationId))
+    ) {
       return res.status(400).json({
         error: "Please choose a valid conversation."
       });
@@ -320,7 +366,8 @@ app.get("/history", async (req, res) => {
     const conversation = await db.query(
       `SELECT id, title
        FROM conversations
-       WHERE id = $1 AND clerk_user_id = $2`,
+       WHERE id = $1
+         AND clerk_user_id = $2`,
       [conversationId, userId]
     );
 
@@ -344,15 +391,18 @@ app.get("/history", async (req, res) => {
       conversation: conversation.rows[0],
       messages: result.rows
     });
+
   } catch (error) {
     console.error("History error:", error.message);
+
     res.status(500).json({
       error: "Could not load chat history."
     });
   }
 });
+
 // =====================================
-// CHECK DAILY MESSAGE USAGE
+// CHECK USAGE
 // =====================================
 
 app.get("/usage", async (req, res) => {
@@ -370,20 +420,24 @@ app.get("/usage", async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Usage check error:", error.message);
+    console.error("Usage error:", error.message);
 
     res.status(500).json({
       error: "Could not load message usage."
     });
   }
 });
+
 // =====================================
-// CHAT WITH TOBY AI AND SAVE CONVERSATION
+// CHAT WITH TOBY AI
 // =====================================
 
 app.post("/chat", async (req, res) => {
+  let userId;
+  let usageReserved = false;
+
   try {
-    const userId = requireLogin(req, res);
+    userId = requireLogin(req, res);
     if (!userId) return;
 
     const messages = req.body.messages;
@@ -409,27 +463,43 @@ app.post("/chat", async (req, res) => {
       });
     }
 
+    // Check message limit.
+    await checkDailyUsage(userId);
+
+    const reserved = await increaseDailyUsage(userId);
+
+    if (!reserved) {
+      const used = await checkDailyUsage(userId);
+
+      return res.status(429).json({
+        error: "You have used your 30 free messages for today. Please come back tomorrow.",
+        limit: FREE_DAILY_LIMIT,
+        used
+      });
+    }
+
+    usageReserved = true;
+
+    // Validate or create conversation.
     let conversationId = req.body.conversationId;
 
-    // Validate an existing conversation.
     if (conversationId) {
       if (!/^\d+$/.test(String(conversationId))) {
-        return res.status(400).json({
-          error: "Invalid conversation."
-        });
+        throw new Error("Invalid conversation ID.");
       }
 
       const existing = await db.query(
-        `SELECT id FROM conversations
-         WHERE id = $1 AND clerk_user_id = $2`,
+        `SELECT id
+         FROM conversations
+         WHERE id = $1
+           AND clerk_user_id = $2`,
         [conversationId, userId]
       );
 
       if (!existing.rows.length) {
-        return res.status(404).json({
-          error: "Conversation not found. Start a new chat."
-        });
+        throw new Error("Conversation not found. Start a new chat.");
       }
+
     } else {
       const title = lastUserMessage.content.trim().slice(0, 45);
 
@@ -443,58 +513,29 @@ app.post("/chat", async (req, res) => {
       conversationId = created.rows[0].id;
     }
 
-    // Check today's free message allowance.
-    const currentUsage = await checkDailyUsage(userId);
-
-    if (currentUsage >= FREE_DAILY_LIMIT) {
-      return res.status(429).json({
-        error: "You have used your 30 free messages for today. Please come back tomorrow.",
-        limit: FREE_DAILY_LIMIT,
-        used: currentUsage
-      });
-    }
-
-    // Reserve one message slot safely.
-    const reserved = await increaseDailyUsage(userId);
-
-    if (!reserved) {
-      return res.status(429).json({
-        error: "You have used your 30 free messages for today. Please come back tomorrow.",
-        limit: FREE_DAILY_LIMIT
-      });
-    }
-
+    // Prepare recent messages.
     const conversationText = messages
       .slice(-20)
       .map(message => {
         const role =
           message.role === "assistant" ? "assistant" : "user";
 
-        return `${role}: ${String(message.content).slice(0, 4000)}`;
+        const content =
+          typeof message.content === "string"
+            ? message.content.slice(0, 4000)
+            : "";
+
+        return `${role}: ${content}`;
       })
       .join("\n");
 
-    let reply;
+    // Generate reply.
+    const reply = await generateTobyReply(
+      conversationText,
+      req.body.attachment || null
+    );
 
-    try {
-  reply = await generateTobyReply(
-    conversationText,
-    req.body.attachment || null
-  );
-} catch (error) {
-  // Give the message slot back if AI generation fails
-  await db.query(
-    `UPDATE daily_usage
-     SET message_count = GREATEST(message_count - 1, 0)
-     WHERE clerk_user_id = $1
-       AND usage_date = CURRENT_DATE`,
-    [userId]
-  );
-
-  throw error;
-    }
-
-    // Save the user message and Toby's reply.
+    // Save both messages.
     await db.query(
       `INSERT INTO chat_messages
        (clerk_user_id, conversation_id, role, content)
@@ -513,28 +554,44 @@ app.post("/chat", async (req, res) => {
     await db.query(
       `UPDATE conversations
        SET updated_at = NOW()
-       WHERE id = $1 AND clerk_user_id = $2`,
+       WHERE id = $1
+         AND clerk_user_id = $2`,
       [conversationId, userId]
     );
+
+    usageReserved = false;
 
     res.json({
       reply,
       conversationId,
       usage: {
-        used: reserved.message_count,
+        used: Number(reserved.message_count),
         limit: FREE_DAILY_LIMIT,
-        remaining: FREE_DAILY_LIMIT - reserved.message_count
+        remaining:
+          FREE_DAILY_LIMIT - Number(reserved.message_count)
       }
     });
 
   } catch (error) {
-    console.error("Toby AI error:", error);
+    console.error("Toby AI chat error:", error);
+
+    if (userId && usageReserved) {
+      try {
+        await refundDailyUsage(userId);
+      } catch (refundError) {
+        console.error("Usage refund error:", refundError.message);
+      }
+    }
 
     res.status(500).json({
       error: "Toby AI is having trouble. Please try again."
     });
   }
 });
+
+// =====================================
+// IMAGE GENERATION
+// =====================================
 
 app.post("/generate-image", async (req, res) => {
   try {
@@ -553,20 +610,27 @@ app.post("/generate-image", async (req, res) => {
       });
     }
 
-    const result = await ai.interactions.create({
-      model: "gemini-3.1-flash-image",
-      input: prompt.trim()
+    const result = await ai.models.generateContent({
+      model: "gemini-2.5-flash-image",
+      contents: prompt.trim()
     });
 
-    if (!result.output_image || !result.output_image.data) {
+    const parts =
+      result.candidates?.[0]?.content?.parts || [];
+
+    const imagePart = parts.find(
+      part => part.inlineData && part.inlineData.data
+    );
+
+    if (!imagePart) {
       return res.status(502).json({
         error: "Gemini could not generate an image."
       });
     }
 
     res.json({
-      image: result.output_image.data,
-      mimeType: "image/png"
+      image: imagePart.inlineData.data,
+      mimeType: imagePart.inlineData.mimeType || "image/png"
     });
 
   } catch (error) {
@@ -579,7 +643,7 @@ app.post("/generate-image", async (req, res) => {
 });
 
 // =====================================
-// NATURAL TOBY AI VOICE
+// TOBY AI VOICE
 // =====================================
 
 app.post("/speak", async (req, res) => {
@@ -589,67 +653,66 @@ app.post("/speak", async (req, res) => {
 
     const text = req.body.text;
 
-    if (typeof text !== "string" || !text.trim()) {
+    if (
+      typeof text !== "string" ||
+      !text.trim() ||
+      text.length > 2000
+    ) {
       return res.status(400).json({
-        error: "No text provided."
+        error: "Enter text of up to 2000 characters."
       });
     }
 
-    const response = await fetch(
-      "https://generativelanguage.googleapis.com/v1beta/interactions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": process.env.GEMINI_API_KEY
-        },
-        body: JSON.stringify({
-          model: "gemini-3.8-flash-lite-tts",
-          input: [{
-            type: "user_input",
-            content: [{
+    const interaction = await ai.interactions.create({
+      model: "gemini-3.8-flash-lite-tts",
+
+      input: [
+        {
+          type: "user_input",
+          content: [
+            {
               type: "text",
-              text: text.slice(0, 2000),
-              annotations: [{
-                type: "speech_metadata",
-                style: "Friendly, warm, natural, relaxed male conversational voice. Speak clearly and naturally."
-              }]
-            }]
-          }],
-          response_format: { type: "audio" },
-          generation_config: {
-            speech_config: [{ voice: "Puck" }]
+              text: text.trim(),
+              annotations: [
+                {
+                  type: "speech_metadata",
+                  style: "Friendly, warm, natural, relaxed conversational voice. Speak clearly and naturally."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+
+      response_format: {
+        type: "audio"
+      },
+
+      generation_config: {
+        speech_config: [
+          {
+            voice: "Puck"
           }
-        })
+        ]
       }
-    );
+    });
 
-    const result = await response.json();
+    const audioData = interaction.output_audio?.data;
 
-    if (!response.ok) {
-      console.error("Voice API error:", result);
-      return res.status(502).json({
-        error: "Voice generation failed."
-      });
-    }
-
-    const audio = (result.steps || [])
-      .filter(step => step.type === "model_output")
-      .flatMap(step => step.content || [])
-      .find(part => part.type === "audio" && part.data);
-
-    if (!audio) {
+    if (!audioData) {
       return res.status(502).json({
         error: "No audio was generated."
       });
     }
 
     res.json({
-      audio: audio.data,
+      audio: audioData,
       mimeType: "audio/wav"
     });
+
   } catch (error) {
-    console.error("Voice error:", error);
+    console.error("Voice generation error:", error);
+
     res.status(500).json({
       error: "Could not generate Toby's voice."
     });
@@ -669,8 +732,10 @@ app.get("/health", async (req, res) => {
       database: "connected",
       ai: "configured"
     });
+
   } catch (error) {
     console.error("Health check error:", error.message);
+
     res.status(500).json({
       status: "error",
       database: "disconnected"
@@ -679,10 +744,24 @@ app.get("/health", async (req, res) => {
 });
 
 // =====================================
-// START SERVER
+// ERROR HANDLER
 // =====================================
 
-const PORT = process.env.PORT || 3000;
+app.use((error, req, res, next) => {
+  console.error("Server error:", error.message);
+
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  res.status(500).json({
+    error: "Something went wrong. Please try again."
+  });
+});
+
+// =====================================
+// START SERVER
+// =====================================
 
 initializeDatabase()
   .then(() => {
@@ -691,6 +770,6 @@ initializeDatabase()
     });
   })
   .catch(error => {
-    console.error("Database startup error:", error.message);
+    console.error("Database startup error:", error);
     process.exit(1);
   });
