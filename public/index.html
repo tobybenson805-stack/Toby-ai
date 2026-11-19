@@ -74,6 +74,7 @@ header a {
   border: 1px solid #8c69ff35;
   border-radius: 22px;
   box-shadow: 0 10px 35px #0005;
+  display: none;
 }
 
 #account h2 {
@@ -524,7 +525,9 @@ button:disabled {
 <button onclick="loadConversations()">🕘 Recent Chats</button>
 
 <div id="recentChats"></div>
-  <div class="sidebar-heading">YOUR SPACE</div>
+  <button onclick="openAccount()">👤 Account / Sign In</button>
+<button onclick="showUsage()">💎 Free Plan Usage</button>
+     <div class="sidebar-heading">YOUR SPACE</div>
 
   <button onclick="openProfile()">👤 My Profile</button>
 
@@ -1575,7 +1578,63 @@ function handleAttachment(inputElement) {
 
   document.getElementById("attachOptions").style.display = "none";
 }
+function openAccount() {
+  const account = document.getElementById("account");
 
+  account.style.display = "block";
+  account.style.position = "fixed";
+  account.style.top = "50%";
+  account.style.left = "50%";
+  account.style.transform = "translate(-50%, -50%)";
+  account.style.width = "90%";
+  account.style.maxWidth = "420px";
+  account.style.maxHeight = "85vh";
+  account.style.overflowY = "auto";
+  account.style.zIndex = "2000";
+
+  if (!document.getElementById("closeAccountBtn")) {
+    const close = document.createElement("button");
+    close.id = "closeAccountBtn";
+    close.textContent = "Close";
+    close.onclick = () => {
+      account.style.display = "none";
+    };
+    account.appendChild(close);
+  }
+
+  toggleSidebar();
+}
+
+async function showUsage() {
+  toggleSidebar();
+
+  const panel = document.getElementById("usagePanel");
+
+  await loadUsage();
+
+  if (panel.style.display === "none") {
+    alert("Please sign in to view your usage.");
+    return;
+  }
+
+  panel.style.display = "block";
+  panel.style.position = "fixed";
+  panel.style.top = "50%";
+  panel.style.left = "50%";
+  panel.style.transform = "translate(-50%, -50%)";
+  panel.style.width = "90%";
+  panel.style.zIndex = "2000";
+
+  if (!document.getElementById("closeUsageBtn")) {
+    const close = document.createElement("button");
+    close.id = "closeUsageBtn";
+    close.textContent = "Close";
+    close.onclick = () => {
+      panel.style.display = "none";
+    };
+    panel.appendChild(close);
+  }
+}
 </script>
 
 </body>
