@@ -232,45 +232,6 @@ async function generateTobyReply(conversation, attachment = null) {
     if (
       !allowedTypes.includes(attachment.mimeType) ||
       typeof attachment.data !== "string" ||
-      attachment.data.length > 7 * 1024 * 1024
-    ) {
-      throw new Error("Invalid or oversized attachment.");
-    }
-
-    if (attachment.mimeType === "text/plain") {
-      const fileText = Buffer.from(
-        attachment.data,
-
-async function generateTobyReply(conversation, attachment = null) {
-  let contents = conversation;
-
-  if (attachment) {
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "application/pdf",
-      "text/plain"
-    ];
-
-    if (
-      !allowedTypes.includes(attachment.mimeType) ||
-
-async function generateTobyReply(conversation, attachment = null) {
-  let contents = conversation;
-
-  if (attachment) {
-    const allowedTypes = [
-      "image/jpeg",
-      "image/png",
-      "image/webp",
-      "application/pdf",
-      "text/plain"
-    ];
-
-    if (
-      !allowedTypes.includes(attachment.mimeType) ||
-      typeof attachment.data !== "string" ||
       !attachment.data ||
       attachment.data.length > 7 * 1024 * 1024
     ) {
@@ -287,15 +248,13 @@ async function generateTobyReply(conversation, attachment = null) {
         conversation +
         "\n\nAttached text file:\n" +
         fileText.slice(0, 100000);
+
     } else {
       contents = [
         {
           role: "user",
           parts: [
-            {
-              text: conversation +
-                "\n\nPlease examine the attached image or document carefully and answer the user's question."
-            },
+            { text: conversation },
             {
               inlineData: {
                 mimeType: attachment.mimeType,
@@ -308,107 +267,65 @@ async function generateTobyReply(conversation, attachment = null) {
     }
   }
 
-  const models = [
-    "gemini-3.5-flash-lite",
-    "gemini-3.8-flash"
-  ];
-
   let lastError;
 
-  for (const model of models) {
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      try {
-        console.log(`Trying Gemini model: ${model}, attempt ${attempt}`);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      console.log(`Toby Gemini attempt ${attempt}`);
 
-        const response = await ai.models.generateContent({
-          model,
-          contents,
-          config: {
-            systemInstruction:
-              "You are Toby AI, a friendly and helpful AI assistant. " +
-              "Speak clearly in English. Explain schoolwork simply and step by step. " +
-              "Be respectful, accurate, and helpful. " +
-              "When a user uploads an image or document, examine it carefully and answer their question."
-          }
-        });
-
-        if (!response.text) {
-          throw new Error("Gemini returned an empty response.");
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash-lite",
+        contents,
+        config: {
+          systemInstruction:
+            "You are Toby AI, a friendly and helpful AI assistant. " +
+            "Speak clearly in English. Explain schoolwork simply and step by step. " +
+            "Be respectful, accurate, and helpful. " +
+            "Carefully examine uploaded images and documents before answering."
         }
+      });
 
-        console.log(`Gemini succeeded using ${model}`);
-        return response.text;
-
-      } catch (error) {
-        lastError = error;
-
-        const status = Number(
-          error.status ||
-          error.code ||
-          error.error?.code ||
-          error.response?.status
-        );
-
-        const message = String(error.message || "");
-
-        const temporaryError =
-          [429, 500, 502, 503, 504].includes(status) ||
-          message.includes("UNAVAILABLE");
-
-        console.error(
-          `Gemini ${model}, attempt ${attempt} failed:`,
-          message
-        );
-
-        if (!temporaryError) {
-          throw error;
-        }
-
-        if (attempt < 2) {
-          await new Promise(resolve =>
-            setTimeout(resolve, attempt * 3000)
-          );
-        }
+      if (!response.text) {
+        throw new Error("Gemini returned an empty response.");
       }
-    }
 
-    console.log(`Switching to backup model after ${model} failed.`);
+      console.log("Toby Gemini reply successful.");
+      return response.text;
+
+    } catch (error) {
+      lastError = error;
+
+      const status = Number(
+        error.status ||
+        error.code ||
+        error.error?.code ||
+        error.response?.status
+      );
+
+      const message = String(error.message || "");
+
+      const temporaryError =
+        [429, 500, 502, 503, 504].includes(status) ||
+        message.includes("UNAVAILABLE");
+
+      console.error(
+        `Toby Gemini attempt ${attempt} failed:`,
+        message
+      );
+
+      if (!temporaryError || attempt === 3) {
+        throw error;
+      }
+
+      await new Promise(resolve =>
+        setTimeout(resolve, attempt * 5000)
+      );
+    }
   }
 
-  throw lastError || new Error("All Gemini models failed.");
+  throw lastError || new Error("Gemini request failed.");
 }
 
-
-// =====================================
-// LIST CONVERSATIONS
-// =====================================
-
-app.get("/conversations", async (req, res) => {
-  try {
-    const userId = requireLogin(req, res);
-    if (!userId) return;
-
-    const result = await db.query(
-      `SELECT id, title, created_at, updated_at
-       FROM conversations
-       WHERE clerk_user_id = $1
-       ORDER BY updated_at DESC
-       LIMIT 100`,
-      [userId]
-    );
-
-    res.json({
-      conversations: result.rows
-    });
-
-  } catch (error) {
-    console.error("Conversations error:", error.message);
-
-    res.status(500).json({
-      error: "Could not load your conversations."
-    });
-  }
-});
 
 // =====================================
 // LOAD CHAT HISTORY
