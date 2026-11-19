@@ -477,20 +477,21 @@ app.post("/chat", async (req, res) => {
     let reply;
 
     try {
-      reply = await generateTobyReply(
-  conversationText,
-  req.body.attachment || null
-);
-      // Give the message slot back if AI generation fails.
-      await db.query(
-        `UPDATE daily_usage
-         SET message_count = GREATEST(message_count - 1, 0)
-         WHERE clerk_user_id = $1
-           AND usage_date = CURRENT_DATE`,
-        [userId]
-      );
+  reply = await generateTobyReply(
+    conversationText,
+    req.body.attachment || null
+  );
+} catch (error) {
+  // Give the message slot back if AI generation fails
+  await db.query(
+    `UPDATE daily_usage
+     SET message_count = GREATEST(message_count - 1, 0)
+     WHERE clerk_user_id = $1
+       AND usage_date = CURRENT_DATE`,
+    [userId]
+  );
 
-      throw error;
+  throw error;
     }
 
     // Save the user message and Toby's reply.
