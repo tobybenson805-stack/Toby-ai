@@ -367,6 +367,38 @@ button:disabled {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.attach-menu {
+  position: relative;
+}
+
+.attach-options {
+  position: absolute;
+  bottom: 55px;
+  left: 0;
+  width: 190px;
+  padding: 8px;
+  background: #171b30;
+  border: 1px solid #343b59;
+  border-radius: 12px;
+  z-index: 1000;
+  box-shadow: 0 5px 20px #0008;
+}
+
+.attach-options button {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin: 3px 0;
+  text-align: left;
+  background: transparent;
+  color: white;
+  border: none;
+  border-radius: 8px;
+}
+
+.attach-options button:active {
+  background: #343b59;
+   }
 </style>
 </head>
 
@@ -484,12 +516,30 @@ button:disabled {
 </main>
 
 <div class="controls" id="chatInput">
-  <input
-    id="message"
-    type="text"
-    placeholder="Ask Toby anything..."
-    autocomplete="off"
-  >
+
+  <div class="attach-menu">
+    <button type="button" id="plusBtn" onclick="toggleAttachMenu()">＋</button>
+
+    <div id="attachOptions" class="attach-options" style="display:none;">
+      <button onclick="document.getElementById('filePicker').click()">📎 Attach files</button>
+      <button onclick="document.getElementById('cameraPicker').click()">📷 Take photo</button>
+      <button onclick="document.getElementById('galleryPicker').click()">🖼️ Gallery</button>
+      <button onclick="pasteContent()">📋 Paste</button>
+      <button onclick="generateImage()">🎨 Generate image</button>
+    </div>
+  </div>
+
+  <input type="file" id="filePicker" accept="image/*,.pdf,.txt" hidden onchange="handleAttachment(this)">
+  <input type="file" id="cameraPicker" accept="image/*" capture="environment" hidden onchange="handleAttachment(this)">
+  <input type="file" id="galleryPicker" accept="image/*" hidden onchange="handleAttachment(this)">
+
+  <input id="message" type="text" placeholder="Ask Toby anything..." autocomplete="off">
+
+  <button id="sendBtn" onclick="sendMessage()">➤</button>
+  <button onclick="listen()">🎤</button>
+
+</div>
+  
 
   <button id="sendBtn" onclick="sendMessage()">➤</button>
   <button onclick="listen()">🎤</button>
@@ -908,7 +958,25 @@ async function speakReply(text) {
 // =====================================
 // TOBY AI CHAT SYSTEM
 // =====================================
+function readAttachment(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
+    reader.onload = () => {
+      resolve({
+        name: file.name,
+        mimeType: file.type,
+        data: reader.result.split(",")[1]
+      });
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Could not read the selected file."));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
 async function sendMessage() {
   const text = input.value.trim();
 
@@ -1166,6 +1234,64 @@ async function openConversation(id) {
   } catch (error) {
     alert(error.message);
    }
+}
+function toggleAttachMenu() {
+  const menu = document.getElementById("attachOptions");
+
+  if (menu.style.display === "none") {
+    menu.style.display = "block";
+  } else {
+    menu.style.display = "none";
+  }
+}
+ async function pasteContent() {
+  try {
+    const text = await navigator.clipboard.readText();
+
+    if (!text) {
+      alert("Your clipboard is empty.");
+      return;
+    }
+
+    document.getElementById("message").value = text;
+    document.getElementById("message").focus();
+    document.getElementById("attachOptions").style.display = "none";
+
+  } catch (error) {
+    alert("Clipboard access failed. You can long-press the typing box and tap Paste.");
+  }
+}
+let selectedAttachment = null;
+
+function handleAttachment(inputElement) {
+  const file = inputElement.files[0];
+
+  if (!file) return;
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+    "text/plain"
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert("Please choose an image, PDF, or text file.");
+    inputElement.value = "";
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    alert("Please choose a file smaller than 5 MB.");
+    inputElement.value = "";
+    return;
+  }
+
+  selectedAttachment = file;
+
+  alert("Selected: " + file.name);
+  document.getElementById("attachOptions").style.display = "none";
 }
 </script>
 
