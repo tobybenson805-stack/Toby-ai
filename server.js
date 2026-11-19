@@ -10,7 +10,7 @@ const { clerkMiddleware, getAuth } = require("@clerk/express");
 const app = express();
 
 app.use(clerkMiddleware());
-app.use(express.json({ limit: "1mb" }));
+app.use(express.json({ limit: "10mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 if (!process.env.DATABASE_URL) {
