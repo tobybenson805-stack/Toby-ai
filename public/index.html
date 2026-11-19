@@ -1064,6 +1064,100 @@ function askSuggestion(question) {
   inputBox.value = question;
   sendMessage();
 }
+// =====================================
+// TOBY AI CHAT HISTORY
+// =====================================
+
+async function loadConversations() {
+  const container = document.getElementById("recentChats");
+
+  container.innerHTML = "<p>Loading chats...</p>";
+
+  try {
+    const token = await window.Clerk.session.getToken();
+
+    const response = await fetch("/conversations", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Could not load chats.");
+    }
+
+    container.innerHTML = "";
+
+    if (!data.conversations.length) {
+      container.innerHTML = "<p>No previous chats yet.</p>";
+      return;
+    }
+
+    data.conversations.forEach(item => {
+      const button = document.createElement("button");
+
+      button.textContent = "💬 " + item.title;
+      button.style.width = "100%";
+      button.style.margin = "5px 0";
+
+      button.onclick = () => openConversation(item.id);
+
+      container.appendChild(button);
+    });
+
+  } catch (error) {
+    container.textContent = error.message;
+  }
+}
+
+// =====================================
+// OPEN PREVIOUS CHAT
+// =====================================
+
+async function openConversation(id) {
+  try {
+    const token = await window.Clerk.session.getToken();
+
+    const response = await fetch(
+      `/history?conversationId=${encodeURIComponent(id)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Could not open chat.");
+    }
+
+    currentConversationId = id;
+
+    messages.length = 0;
+    chat.innerHTML = "";
+
+    data.messages.forEach(item => {
+      messages.push({
+        role: item.role,
+        content: item.content
+      });
+
+      addMessage(
+        item.content,
+        item.role === "user" ? "user" : "bot"
+      );
+    });
+
+    toggleSidebar();
+
+  } catch (error) {
+    alert(error.message);
+   }
+}
 </script>
 
 </body>
