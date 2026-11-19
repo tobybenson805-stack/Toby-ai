@@ -399,6 +399,99 @@ button:disabled {
 .attach-options button:active {
   background: #343b59;
    }
+/* TOBY AI READ ALOUD PLAYER */
+
+.message.bot {
+  position: relative;
+}
+
+.read-aloud-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid #925cff55;
+  border-radius: 20px;
+  background: #24213e;
+  color: #d9c8ff;
+  font-size: 13px;
+  box-shadow: none;
+}
+
+.read-aloud-btn:active {
+  background: #38305e;
+}
+
+.toby-audio-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 12px;
+  background: #252638;
+  border: 1px solid #ffffff20;
+  border-radius: 18px;
+  width: 100%;
+}
+
+.audio-play-btn {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 18px;
+}
+
+.audio-time {
+  color: white;
+  font-size: 12px;
+  min-width: 35px;
+}
+
+.audio-wave {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  flex: 1;
+  height: 38px;
+  overflow: hidden;
+}
+
+.audio-wave span {
+  display: block;
+  width: 3px;
+  height: 8px;
+  border-radius: 5px;
+  background: #b99aff;
+}
+
+.audio-wave.playing span {
+  animation: tobyWave .65s ease-in-out infinite alternate;
+}
+
+.audio-wave span:nth-child(3n) {
+  animation-delay: .2s;
+}
+
+.audio-wave span:nth-child(3n + 1) {
+  animation-delay: .4s;
+}
+
+@keyframes tobyWave {
+  from { height: 5px; }
+  to { height: 30px; }
+}
+
+.audio-close-btn {
+  background: transparent;
+  box-shadow: none;
+  padding: 5px;
+  font-size: 21px;
+}
+
 </style>
 </head>
 
@@ -622,15 +715,32 @@ async function loadUsage() {
 // MESSAGE SYSTEM
 // =====================================
 
+
 function addMessage(text, type) {
   const div = document.createElement("div");
 
   div.className = "message " + type;
-  div.textContent = text;
+
+  const content = document.createElement("div");
+  content.textContent = text;
+  div.appendChild(content);
+
+  if (type === "bot") {
+    const readBtn = document.createElement("button");
+
+    readBtn.className = "read-aloud-btn";
+    readBtn.type = "button";
+    readBtn.textContent = "🔊 Read aloud";
+
+    readBtn.onclick = () => readAloud(text, div, readBtn);
+
+    div.appendChild(readBtn);
+  }
 
   chat.appendChild(div);
   chat.scrollTop = chat.scrollHeight;
 }
+
 
 // =====================================
 // LOAD EXTERNAL SCRIPT SAFELY
@@ -956,6 +1066,124 @@ async function speakReply(text) {
  }
 
 // =====================================
+// TOBY AI READ ALOUD PLAYER
+// =====================================
+
+let tobySpeech = null;
+let tobySpeaking = false;
+let tobyPaused = false;
+let tobyStartTime = 0;
+
+function readAloud(text, messageDiv, readBtn) {
+  if (!("speechSynthesis" in window)) {
+    alert("Your browser does not support voice playback.");
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  document.querySelectorAll(".toby-audio-player").forEach(player => {
+    player.remove();
+  });
+
+  const player = document.createElement("div");
+  player.className = "toby-audio-player";
+
+  const playBtn = document.createElement("button");
+  playBtn.className = "audio-play-btn";
+  playBtn.textContent = "Ⅱ";
+  playBtn.type = "button";
+
+  const time = document.createElement("span");
+  time.className = "audio-time";
+  time.textContent = "00:00";
+
+  const wave = document.createElement("div");
+  wave.className = "audio-wave";
+
+  for (let i = 0; i < 28; i++) {
+    const bar = document.createElement("span");
+    bar.style.height = (5 + Math.random() * 25) + "px";
+    wave.appendChild(bar);
+  }
+
+  const closeBtn = document.createElement("button");
+  closeBtn.className = "audio-close-btn";
+  closeBtn.textContent = "×";
+  closeBtn.type = "button";
+
+  player.append(playBtn, time, wave, closeBtn);
+  messageDiv.appendChild(player);
+
+  tobySpeech = new SpeechSynthesisUtterance(text);
+  tobySpeech.lang = "en-US";
+  tobySpeech.rate = 0.95;
+  tobySpeech.pitch = 1;
+
+  tobySpeaking = true;
+  tobyPaused = false;
+  tobyStartTime = Date.now();
+
+  function updateTime() {
+    if (!tobySpeaking || tobyPaused) return;
+
+    const seconds = Math.floor((Date.now() - tobyStartTime) / 1000);
+    time.textContent =
+      String(Math.floor(seconds / 60)).padStart(2, "0") +
+      ":" +
+      String(seconds % 60).padStart(2, "0");
+  }
+
+  const timer = setInterval(updateTime, 500);
+
+  function finishSpeech() {
+    clearInterval(timer);
+    tobySpeaking = false;
+    tobyPaused = false;
+    playBtn.textContent = "▶";
+    wave.classList.remove("playing");
+    time.textContent = "Done";
+    readBtn.textContent = "🔊 Read again";
+  }
+
+  tobySpeech.onend = finishSpeech;
+  tobySpeech.onerror = finishSpeech;
+
+  playBtn.onclick = () => {
+    if (tobyPaused) {
+      window.speechSynthesis.resume();
+      tobyPaused = false;
+      tobySpeaking = true;
+      tobyStartTime = Date.now();
+      playBtn.textContent = "Ⅱ";
+      wave.classList.add("playing");
+    } else if (tobySpeaking) {
+      window.speechSynthesis.pause();
+      tobyPaused = true;
+      tobySpeaking = false;
+      playBtn.textContent = "▶";
+      wave.classList.remove("playing");
+    } else {
+      readAloud(text, messageDiv, readBtn);
+    }
+  };
+
+  closeBtn.onclick = () => {
+    window.speechSynthesis.cancel();
+    clearInterval(timer);
+    tobySpeaking = false;
+    tobyPaused = false;
+    player.remove();
+    readBtn.textContent = "🔊 Read aloud";
+  };
+
+  readBtn.textContent = "🔊 Playing...";
+  wave.classList.add("playing");
+
+  window.speechSynthesis.speak(tobySpeech);
+}
+
+// =====================================
 // TOBY AI CHAT SYSTEM
 // =====================================
 function readAttachment(file) {
@@ -964,7 +1192,7 @@ function readAttachment(file) {
 
     reader.onload = () => {
       resolve({
-        name: file.name,
+ rep  name: file.name,
         mimeType: file.type,
         data: reader.result.split(",")[1]
       });
@@ -1054,7 +1282,7 @@ async function sendMessage() {
     });
 
     addMessage(reply, "bot");
-    speakReply(reply);
+    
 
   } catch (error) {
     console.error("Toby AI error:", error);
