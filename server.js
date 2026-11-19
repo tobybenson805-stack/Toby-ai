@@ -240,6 +240,31 @@ async function generateTobyReply(conversation, attachment = null) {
     if (attachment.mimeType === "text/plain") {
       const fileText = Buffer.from(
         attachment.data,
+
+async function generateTobyReply(conversation, attachment = null) {
+  let contents = conversation;
+
+  if (attachment) {
+    const allowedTypes = [
+      "image/jpeg",
+      "image/png",
+      "image/webp",
+      "application/pdf",
+      "text/plain"
+    ];
+
+    if (
+      !allowedTypes.includes(attachment.mimeType) ||
+      typeof attachment.data !== "string" ||
+      !attachment.data ||
+      attachment.data.length > 7 * 1024 * 1024
+    ) {
+      throw new Error("Invalid or oversized attachment.");
+    }
+
+    if (attachment.mimeType === "text/plain") {
+      const fileText = Buffer.from(
+        attachment.data,
         "base64"
       ).toString("utf8");
 
@@ -249,26 +274,27 @@ async function generateTobyReply(conversation, attachment = null) {
         fileText.slice(0, 100000);
 
     } else {
-      contents = [
-        {
-          role: "user",
-          parts: [
-            { text: conversation },
-            {
-              inlineData: {
-                mimeType: attachment.mimeType,
-                data: attachment.data
-              }
+      contents = [{
+        role: "user",
+        parts: [
+          {
+            text: conversation +
+              "\n\nPlease examine the attached file carefully and answer the user's question."
+          },
+          {
+            inlineData: {
+              mimeType: attachment.mimeType,
+              data: attachment.data
             }
-          ]
-        }
-      ];
+          }
+        ]
+      }];
     }
   }
 
   let lastError;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash-lite",
@@ -277,12 +303,18 @@ async function generateTobyReply(conversation, attachment = null) {
           systemInstruction:
             "You are Toby AI, a friendly and helpful AI assistant. " +
             "Speak clearly in English. Explain schoolwork simply and step by step. " +
-            "Be respectful, accurate, and helpful. " +
-            "When a user uploads an image or document, examine it and answer their question."
+            "Be respectful, accurate and helpful. " +
+            "When a user uploads an image, inspect the actual image carefully. " +
+            "Describe what you can see and answer questions about it. " +
+            "Never pretend to see an image if it was not received."
         }
       });
 
-      return response.text || "I couldn't create a reply. Please try again.";
+      if (!response.text) {
+        throw new Error("Gemini returned an empty response.");
+      }
+
+      return response.text;
 
     } catch (error) {
       lastError = error;
