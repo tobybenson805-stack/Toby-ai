@@ -513,21 +513,21 @@ app.post("/chat", async (req, res) => {
       conversationId = created.rows[0].id;
     }
 
-    // Prepare recent messages.
-    const conversationText = messages
-      .slice(-20)
-      .map(message => {
-        const role =
-          message.role === "assistant" ? "assistant" : "user";
+    // Prepare a smaller, faster conversation context.
+const conversationText = messages
+  .slice(-10)
+  .map(message => {
+    const role =
+      message.role === "assistant" ? "assistant" : "user";
 
-        const content =
-          typeof message.content === "string"
-            ? message.content.slice(0, 4000)
-            : "";
+    const content =
+      typeof message.content === "string"
+        ? message.content.slice(0, 2000)
+        : "";
 
-        return `${role}: ${content}`;
-      })
-      .join("\n");
+    return `${role}: ${content}`;
+  })
+  .join("\n");
 
     // Generate reply.
     const reply = await generateTobyReply(
