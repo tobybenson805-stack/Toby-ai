@@ -979,22 +979,14 @@ function readAttachment(file) {
 }
 async function sendMessage() {
   const text = input.value.trim();
+  const file = selectedAttachment;
 
-  if (!text || sendBtn.disabled) return;
+  if ((!text && !file) || sendBtn.disabled) return;
 
   if (!clerkReady || !window.Clerk || !window.Clerk.isSignedIn) {
     addMessage("Please log in before chatting.", "bot");
     return;
   }
-
-  input.value = "";
-
-  addMessage(text, "user");
-
-  messages.push({
-    role: "user",
-    content: text
-  });
 
   sendBtn.disabled = true;
 
@@ -1005,6 +997,23 @@ async function sendMessage() {
       throw new Error("Please log in again.");
     }
 
+    let attachment = null;
+
+    if (file) {
+      attachment = await readAttachment(file);
+    }
+
+    const userContent = text || `[Attached: ${file.name}]`;
+
+    input.value = "";
+
+    addMessage(userContent, "user");
+
+    messages.push({
+      role: "user",
+      content: userContent
+    });
+
     const response = await fetch("/chat", {
       method: "POST",
       headers: {
@@ -1012,9 +1021,10 @@ async function sendMessage() {
         "Authorization": `Bearer ${token}`
       },
       body: JSON.stringify({
-  messages,
-  conversationId: currentConversationId
-})
+        messages,
+        conversationId: currentConversationId,
+        attachment
+      })
     });
 
     const data = await response.json();
@@ -1024,33 +1034,37 @@ async function sendMessage() {
     }
 
     const reply = data.reply || "I couldn't create a reply.";
-if (data.conversationId) {
-  currentConversationId = data.conversationId;
-}
 
-loadConversations();
-     loadUsage();
+    if (data.conversationId) {
+      currentConversationId = data.conversationId;
+    }
+
+    selectedAttachment = null;
+
+    document.getElementById("filePicker").value = "";
+    document.getElementById("cameraPicker").value = "";
+    document.getElementById("galleryPicker").value = "";
+
+    loadConversations();
+    loadUsage();
+
     messages.push({
       role: "assistant",
       content: reply
     });
 
     addMessage(reply, "bot");
-
     speakReply(reply);
 
   } catch (error) {
     console.error("Toby AI error:", error);
-
-    addMessage(
-      "Toby AI error: " + error.message,
-      "bot"
-    );
+    addMessage("Toby AI error: " + error.message, "bot");
 
   } finally {
     sendBtn.disabled = false;
   }
 }
+
 
 // =====================================
 // ENTER KEY
