@@ -163,13 +163,13 @@ header a {
   border: 1px solid #8295d025;
   border-bottom-left-radius: 5px;
 }
-
 .controls {
   display: flex;
+  align-items: center;
   gap: 9px;
-  padding: 13px;
-  padding-bottom: max(13px, env(safe-area-inset-bottom));
-  background: #101529ed;
+  padding: 10px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: #101529f5;
   border-top: 1px solid #ffffff15;
   backdrop-filter: blur(18px);
   position: fixed;
@@ -177,6 +177,16 @@ header a {
   left: 0;
   width: 100%;
   z-index: 30;
+}
+
+#chatInput {
+  min-height: 70px;
+}
+
+#message {
+  min-width: 0;
+  height: 54px;
+  font-size: 16px;
 }
 
 input {
@@ -236,17 +246,23 @@ button:disabled {
 
   #chat {
     padding: 12px;
-    height: calc(100dvh - 250px);
+    height: calc(100dvh - 390px);
+    min-height: 180px;
+    padding-bottom: 30px;
   }
 
   .controls {
     gap: 6px;
     padding: 10px;
-    padding-bottom: max(160px, env(safe-area-inset-bottom));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
 
   .controls button {
     padding: 10px;
+  }
+
+  #message {
+    font-size: 16px;
   }
 }
 /* PREMIUM SIDEBAR */
