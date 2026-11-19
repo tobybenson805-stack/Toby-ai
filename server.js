@@ -326,7 +326,36 @@ async function generateTobyReply(conversation, attachment = null) {
   throw lastError || new Error("Gemini request failed.");
 }
 
+// =====================================
+// LIST RECENT CONVERSATIONS
+// =====================================
 
+app.get("/conversations", async (req, res) => {
+  try {
+    const userId = requireLogin(req, res);
+    if (!userId) return;
+
+    const result = await db.query(
+      `SELECT id, title, created_at, updated_at
+       FROM conversations
+       WHERE clerk_user_id = $1
+       ORDER BY updated_at DESC
+       LIMIT 50`,
+      [userId]
+    );
+
+    res.json({
+      conversations: result.rows
+    });
+
+  } catch (error) {
+    console.error("Conversations error:", error);
+
+    res.status(500).json({
+      error: "Could not load recent conversations."
+    });
+  }
+});
 // =====================================
 // LOAD CHAT HISTORY
 // =====================================
