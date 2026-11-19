@@ -612,7 +612,8 @@ button:disabled {
 
   <div class="attach-menu">
     <button type="button" id="plusBtn" onclick="toggleAttachMenu()">＋</button>
-
+<div id="attachmentPreview" style="display:none; padding:10px;">
+</div>
     <div id="attachOptions" class="attach-options" style="display:none;">
       <button onclick="document.getElementById('filePicker').click()">📎 Attach files</button>
       <button onclick="document.getElementById('cameraPicker').click()">📷 Take photo</button>
@@ -1500,6 +1501,7 @@ function toggleAttachMenu() {
 }
 let selectedAttachment = null;
 
+
 function handleAttachment(inputElement) {
   const file = inputElement.files[0];
 
@@ -1527,9 +1529,36 @@ function handleAttachment(inputElement) {
 
   selectedAttachment = file;
 
-  alert("Selected: " + file.name);
+  const preview = document.getElementById("attachmentPreview");
+
+  if (!preview) {
+    alert("Attachment preview area is missing.");
+    inputElement.value = "";
+    return;
+  }
+
+  preview.innerHTML = "";
+
+  if (file.type.startsWith("image/")) {
+    const img = document.createElement("img");
+    img.src = URL.createObjectURL(file);
+    img.style.maxWidth = "150px";
+    img.style.maxHeight = "150px";
+    img.style.borderRadius = "12px";
+    img.style.objectFit = "cover";
+
+    preview.appendChild(img);
+  }
+
+  const name = document.createElement("p");
+  name.textContent = "Selected: " + file.name;
+  preview.appendChild(name);
+
+  preview.style.display = "block";
+
   document.getElementById("attachOptions").style.display = "none";
 }
+
 </script>
 
 </body>
