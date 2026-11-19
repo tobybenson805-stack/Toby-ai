@@ -268,7 +268,7 @@ async function generateTobyReply(conversation, attachment = null) {
 
   let lastError;
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash-lite",
