@@ -618,7 +618,7 @@ button:disabled {
       <button onclick="document.getElementById('cameraPicker').click()">📷 Take photo</button>
       <button onclick="document.getElementById('galleryPicker').click()">🖼️ Gallery</button>
       <button onclick="pasteContent()">📋 Paste</button>
-      <button onclick="generateImage()">🎨 Generate image</button>
+      <button onclick="alert('Image generation is coming soon!')">🎨 Generate image</button>
     </div>
   </div>
 
@@ -1187,7 +1187,7 @@ function readAttachment(file) {
 
     reader.onload = () => {
       resolve({
- rep  name: file.name,
+        name: file.name,
         mimeType: file.type,
         data: reader.result.split(",")[1]
       });
