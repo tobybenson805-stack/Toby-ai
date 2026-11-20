@@ -907,24 +907,51 @@ async function refreshAccount() {
   }
 }
 
+
 async function startClerk() {
-  if (!CLERK_PUBLISHABLE_KEY || !CLERK_PUBLISHABLE_KEY.startsWith("pk_")) {
-    throw new Error("The Clerk publishable key is missing or invalid.");
+  if (!CLERK_PUBLISHABLE_KEY ||
+      !CLERK_PUBLISHABLE_KEY.startsWith("pk_")) {
+    throw new Error("Clerk publishable key is missing or invalid.");
   }
 
-  await new Promise((resolve, reject) => {
-    if (window.Clerk) return resolve();
+  // Get the correct Clerk domain from the publishable key.
+  const encoded = CLERK_PUBLISHABLE_KEY.split("_")[2];
 
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = "https://advanced-filly-9718.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js";
-    script.crossOrigin = "anonymous";
-    script.onload = resolve;
-    script.onerror = () => reject(new Error("Couldn't load the account service."));
-    document.head.appendChild(script);
-  });
+  if (!encoded) {
+    throw new Error("Could not read the Clerk domain.");
+  }
+
+  const decoded = atob(encoded);
+  const clerkDomain = decoded.split("$")[0];
+
+  if (!clerkDomain) {
+    throw new Error("Clerk domain is invalid.");
+  }
+
+  const scriptUrl =
+    "https://" + clerkDomain + "/npm/@clerk/clerk-js@5/dist/clerk.browser.js";
+
+  if (!window.Clerk) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = scriptUrl;
+      script.async = true;
+      script.crossOrigin = "anonymous";
+
+      script.onload = resolve;
+      script.onerror = () =>
+        reject(new Error("Clerk script could not load."));
+
+      document.head.appendChild(script);
+    });
+  }
+
+  if (!window.Clerk) {
+    throw new Error("Clerk loaded but did not initialize.");
+  }
 
   clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+
   await clerk.load();
 
   clerk.addListener(() => {
@@ -932,6 +959,8 @@ async function startClerk() {
   });
 
   await refreshAccount();
+
+  console.log("Toby AI account service loaded successfully.");
 }
 
 window.addEventListener("load", async () => {
