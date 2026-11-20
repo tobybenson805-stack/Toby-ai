@@ -959,7 +959,7 @@ async function startClerk() {
 
     await refreshAccount();
 
-    console.log("Toby AI Clerk loaded successfully.");
+        console.log("Toby AI Clerk loaded successfully.");
   } catch (error) {
     console.error("TOBY CLERK ERROR:", error);
     status.textContent = error.message;
@@ -967,13 +967,12 @@ async function startClerk() {
   }
 }
 
-  console.log("Toby AI account service loaded successfully.");
-}
 console.log("TOBY AI JAVASCRIPT IS RUNNING");
 
 document.addEventListener("DOMContentLoaded", () => {
   console.log("TOBY AI PAGE READY");
 });
+
 window.addEventListener("load", async () => {
   try {
     await startClerk();
