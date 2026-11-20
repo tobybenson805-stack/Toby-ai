@@ -253,6 +253,22 @@ button{cursor:pointer}
     <button class="new-chat" onclick="newChat()">＋ New chat</button>
 
     <div class="section-label">RECENT CHATS</div>
+    <input
+  id="chatSearch"
+  type="search"
+  placeholder="🔎 Search your chats..."
+  oninput="searchChats()"
+  style="
+    width:100%;
+    padding:12px;
+    margin-bottom:12px;
+    border-radius:10px;
+    border:1px solid rgba(145,165,255,.2);
+    background:#10162a;
+    color:white;
+    outline:none;
+  "
+>
     <div class="recent-list" id="recentChats">
       <div class="typing">Loading conversations...</div>
     </div>
