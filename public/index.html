@@ -967,21 +967,6 @@ async function startClerk() {
   }
 }
 
-
-  if (!window.Clerk) {
-    throw new Error("Clerk loaded but did not initialize.");
-  }
-
-  clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
-
-  await clerk.load();
-
-  clerk.addListener(() => {
-    refreshAccount();
-  });
-
-  await refreshAccount();
-
   console.log("Toby AI account service loaded successfully.");
 }
 console.log("TOBY AI JAVASCRIPT IS RUNNING");
