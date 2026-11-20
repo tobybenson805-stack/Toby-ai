@@ -1160,7 +1160,7 @@ window.addEventListener("load", async () => {
   if (attachMenu) {
     const videoButton = document.createElement("button");
     videoButton.textContent = "🎬 AI Video Generator";
-    videoButton.onclick = openTobyVideo;
+    videoButton.onclick = () => window.openTobyVideo();
     attachMenu.appendChild(videoButton);
   }
 
