@@ -1206,6 +1206,122 @@ window.addEventListener("load", async () => {
 </script>
 
 <!-- END TOBY AI VIDEO GENERATOR -->
-    
+ 
+<!-- TOBY AI STUDY MODE -->
+<style>
+#studyModal .modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+#studyModal input,
+#studyModal select {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  border-radius: 10px;
+  background: #080e20;
+  border: 1px solid rgba(145,165,255,.2);
+  color: white;
+}
+#studyModal label {
+  display: block;
+  margin-top: 15px;
+  color: #cbd4ee;
+  font-size: 13px;
+}
+</style>
+
+<div class="overlay" id="studyModal">
+  <div class="modal">
+    <h2>📚 Toby AI Study Mode</h2>
+    <p>Learn, practise and test your knowledge.</p>
+
+    <label for="studySubject">Choose a subject</label>
+    <select id="studySubject">
+      <option>Mathematics</option>
+      <option>English</option>
+      <option>Science</option>
+      <option>Geography</option>
+      <option>History</option>
+      <option>French</option>
+      <option>Other</option>
+    </select>
+
+    <label for="studyTopic">What topic do you want to study?</label>
+    <input id="studyTopic" placeholder="Enter your topic">
+
+    <label for="studyMode">Choose a learning activity</label>
+    <select id="studyMode">
+      <option value="explain">Explain the topic step by step</option>
+      <option value="quiz">Give me a quiz and mark my answers</option>
+      <option value="notes">Create simple study notes</option>
+      <option value="flashcards">Create revision flashcards</option>
+      <option value="test">Give me a practice test</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="primary" onclick="startStudyMode()">Start studying</button>
+      <button class="secondary" onclick="closeStudyMode()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const menu = document.getElementById("attachMenu");
+
+  if (menu) {
+    const button = document.createElement("button");
+    button.textContent = "📚 Toby AI Study Mode";
+    button.onclick = () => window.openStudyMode();
+    menu.appendChild(button);
+  }
+
+  window.openStudyMode = function () {
+    if (!clerk || !clerk.user) {
+      toast("Please sign in first.");
+      openAccount();
+      return;
+    }
+
+    $("attachMenu").style.display = "none";
+    $("studyModal").style.display = "flex";
+  };
+
+  window.closeStudyMode = function () {
+    $("studyModal").style.display = "none";
+  };
+
+  window.startStudyMode = function () {
+    const subject = $("studySubject").value;
+    const topic = $("studyTopic").value.trim();
+    const mode = $("studyMode").value;
+
+    if (!topic) {
+      toast("Please enter a topic first.");
+      return;
+    }
+
+    const instructions = {
+      explain: "Explain this topic step by step in simple language.",
+      quiz: "Create a quiz about this topic. Ask one question at a time and mark my answers.",
+      notes: "Create clear, short study notes about this topic.",
+      flashcards: "Create useful revision flashcards with questions and answers.",
+      test: "Create a practice test about this topic and mark my answers."
+    };
+
+    const prompt =
+      "I am using Toby AI Study Mode. Subject: " + subject +
+      ". Topic: " + topic + ". " + instructions[mode] +
+      " Use language suitable for a Grade 9 student.";
+
+    closeStudyMode();
+    $("message").value = prompt;
+    sendMessage();
+  };
+})();
+</script>
+<!-- END TOBY AI STUDY MODE -->
+   
 </body>
 </html>
