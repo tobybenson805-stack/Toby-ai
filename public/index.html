@@ -605,38 +605,61 @@ function newChat() {
   $("message").focus();
 }
 
+
 async function loadConversations() {
   if (!clerk || !clerk.user) {
+    allConversations = [];
     $("recentChats").textContent = "Sign in to see your chats.";
     return;
   }
 
   try {
     const data = await api("/conversations");
-    const conversations = Array.isArray(data) ? data :
-      (data.conversations || data.items || []);
 
-    const list = $("recentChats");
-    list.replaceChildren();
+    allConversations = Array.isArray(data)
+      ? data
+      : (data.conversations || data.items || []);
 
-    if (!conversations.length) {
-      list.textContent = "No conversations yet.";
-      return;
-    }
+    searchChats();
 
-    conversations.forEach(item => {
-      const button = document.createElement("button");
-      button.className = "recent-item" +
-        (String(item.id) === String(conversationId) ? " active" : "");
-      button.textContent = item.title || "New conversation";
-      button.title = button.textContent;
-      button.onclick = () => openConversation(item.id);
-      list.appendChild(button);
-    });
   } catch (error) {
     $("recentChats").textContent = "Couldn't load chats.";
   }
 }
+
+function searchChats() {
+  const query = $("chatSearch").value.trim().toLowerCase();
+  const list = $("recentChats");
+
+  list.replaceChildren();
+
+  const filtered = allConversations.filter(item => {
+    const title = item.title || "New conversation";
+    return title.toLowerCase().includes(query);
+  });
+
+  if (!filtered.length) {
+    list.textContent = query
+      ? "No matching conversations found."
+      : "No conversations yet.";
+    return;
+  }
+
+  filtered.forEach(item => {
+    const button = document.createElement("button");
+
+    button.className = "recent-item" +
+      (String(item.id) === String(conversationId) ? " active" : "");
+
+    button.textContent = item.title || "New conversation";
+    button.title = button.textContent;
+
+    button.onclick = () => openConversation(item.id);
+
+    list.appendChild(button);
+  });
+}
+
 
 async function openConversation(id) {
   try {
