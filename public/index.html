@@ -909,42 +909,64 @@ async function refreshAccount() {
 
 
 async function startClerk() {
-  if (!CLERK_PUBLISHABLE_KEY ||
-      !CLERK_PUBLISHABLE_KEY.startsWith("pk_")) {
-    throw new Error("Clerk publishable key is missing or invalid.");
+  const status = $("accountEmail");
+  status.textContent = "Connecting to Clerk...";
+
+  try {
+    const encoded = CLERK_PUBLISHABLE_KEY.split("_")[2];
+    const domain = atob(encoded).split("$")[0];
+
+    if (!domain) throw new Error("Clerk domain is missing.");
+
+    status.textContent = "Loading Clerk script...";
+
+    if (!window.Clerk) {
+      await Promise.race([
+        new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src =
+            "https://" + domain +
+            "/npm/@clerk/clerk-js@latest/dist/clerk.browser.js";
+          script.async = true;
+          script.crossOrigin = "anonymous";
+          script.onload = resolve;
+          script.onerror = () =>
+            reject(new Error("Clerk script failed to load."));
+          document.head.appendChild(script);
+        }),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Clerk script timed out.")), 15000)
+        )
+      ]);
+    }
+
+    if (!window.Clerk) {
+      throw new Error("Clerk did not initialize.");
+    }
+
+    status.textContent = "Connecting your account...";
+
+    clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+
+    await Promise.race([
+      clerk.load(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Clerk connection timed out.")), 20000)
+      )
+    ]);
+
+    clerk.addListener(() => refreshAccount());
+
+    await refreshAccount();
+
+    console.log("Toby AI Clerk loaded successfully.");
+  } catch (error) {
+    console.error("TOBY CLERK ERROR:", error);
+    status.textContent = error.message;
+    toast(error.message);
   }
+}
 
-  // Get the correct Clerk domain from the publishable key.
-  const encoded = CLERK_PUBLISHABLE_KEY.split("_")[2];
-
-  if (!encoded) {
-    throw new Error("Could not read the Clerk domain.");
-  }
-
-  const decoded = atob(encoded);
-  const clerkDomain = decoded.split("$")[0];
-
-  if (!clerkDomain) {
-    throw new Error("Clerk domain is invalid.");
-  }
-
-  const scriptUrl =
-    "https://" + clerkDomain + "/npm/@clerk/clerk-js@5/dist/clerk.browser.js";
-
-  if (!window.Clerk) {
-    await new Promise((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = scriptUrl;
-      script.async = true;
-      script.crossOrigin = "anonymous";
-
-      script.onload = resolve;
-      script.onerror = () =>
-        reject(new Error("Clerk script could not load."));
-
-      document.head.appendChild(script);
-    });
-  }
 
   if (!window.Clerk) {
     throw new Error("Clerk loaded but did not initialize.");
