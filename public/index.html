@@ -967,66 +967,105 @@ async function refreshAccount() {
 }
 
 
+
 async function startClerk() {
   const status = $("accountEmail");
   status.textContent = "Connecting to Clerk...";
 
   try {
     const encoded = CLERK_PUBLISHABLE_KEY.split("_")[2];
+
+    if (!encoded) {
+      throw new Error("Invalid Clerk publishable key.");
+    }
+
     const domain = atob(encoded).split("$")[0];
 
-    if (!domain) throw new Error("Clerk domain is missing.");
+    if (!domain) {
+      throw new Error("Clerk domain is missing.");
+    }
 
-    status.textContent = "Loading Clerk script...";
+    // Load a script only if it is not already available.
+    function loadScript(src, attributes = {}) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+
+        Object.entries(attributes).forEach(([key, value]) => {
+          script.setAttribute(key, value);
+        });
+
+        script.src = src;
+        script.async = true;
+        script.crossOrigin = "anonymous";
+
+        script.onload = resolve;
+        script.onerror = () =>
+          reject(new Error("Failed to load: " + src));
+
+        document.head.appendChild(script);
+      });
+    }
+
+    // STEP 1: Load Clerk UI bundle first.
+    status.textContent = "Loading Clerk UI...";
+
+    if (!window.__internal_ClerkUICtor) {
+      await loadScript(
+        "https://" + domain +
+        "/npm/@clerk/ui@1/dist/ui.browser.js"
+      );
+    }
+
+    if (!window.__internal_ClerkUICtor) {
+      throw new Error("Clerk UI component did not load.");
+    }
+
+    // STEP 2: Load Clerk JavaScript.
+    status.textContent = "Loading Clerk...";
 
     if (!window.Clerk) {
-      await Promise.race([
-        new Promise((resolve, reject) => {
-          const script = document.createElement("script");
-          script.setAttribute("data-clerk-publishable-key", CLERK_PUBLISHABLE_KEY);
-
-script.src =
-  "https://" + domain +
-  "/npm/@clerk/clerk-js@6/dist/clerk.browser.js";
-          script.async = true;
-          script.crossOrigin = "anonymous";
-          script.onload = resolve;
-          script.onerror = () =>
-            reject(new Error("Clerk script failed to load."));
-          document.head.appendChild(script);
-        }),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Clerk script timed out.")), 15000)
-        )
-      ]);
+      await loadScript(
+        "https://" + domain +
+        "/npm/@clerk/clerk-js@6/dist/clerk.browser.js",
+        {
+          "data-clerk-publishable-key": CLERK_PUBLISHABLE_KEY
+        }
+      );
     }
 
     if (!window.Clerk) {
-      throw new Error("Clerk did not initialize.");
+      throw new Error("Clerk JavaScript did not load.");
     }
+
+    // STEP 3: Initialize Clerk WITH its UI component.
+    clerk = window.Clerk;
 
     status.textContent = "Connecting your account...";
-clerk = window.Clerk;
 
-    await Promise.race([
-      clerk.load(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Clerk connection timed out.")), 20000)
-      )
-    ]);
+    await clerk.load({
+      ui: {
+        ClerkUI: window.__internal_ClerkUICtor
+      }
+    });
 
-    clerk.addListener(() => refreshAccount());
+    // STEP 4: Listen for account changes.
+    clerk.addListener(() => {
+      refreshAccount();
+    });
 
+    // STEP 5: Update Toby AI account.
     await refreshAccount();
 
-        console.log("Toby AI Clerk loaded successfully.");
+    console.log("Toby AI Clerk loaded successfully.");
+
   } catch (error) {
     console.error("TOBY CLERK ERROR:", error);
-    status.textContent = error.message;
-    toast(error.message);
+
+    status.textContent = "Account service unavailable";
+
+    toast("Clerk error: " + error.message);
   }
 }
-
 console.log("TOBY AI JAVASCRIPT IS RUNNING");
 
 document.addEventListener("DOMContentLoaded", () => {
