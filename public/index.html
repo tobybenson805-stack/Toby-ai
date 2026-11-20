@@ -924,9 +924,11 @@ async function startClerk() {
       await Promise.race([
         new Promise((resolve, reject) => {
           const script = document.createElement("script");
-          script.src =
-            "https://" + domain +
-            "/npm/@clerk/clerk-js@latest/dist/clerk.browser.js";
+          script.setAttribute("data-clerk-publishable-key", CLERK_PUBLISHABLE_KEY);
+
+script.src =
+  "https://" + domain +
+  "/npm/@clerk/clerk-js@6/dist/clerk.browser.js";
           script.async = true;
           script.crossOrigin = "anonymous";
           script.onload = resolve;
@@ -945,8 +947,7 @@ async function startClerk() {
     }
 
     status.textContent = "Connecting your account...";
-
-    clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+clerk = window.Clerk;
 
     await Promise.race([
       clerk.load(),
