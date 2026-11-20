@@ -1,1648 +1,932 @@
-      
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#080b18">
 <link rel="manifest" href="/manifest.json">
 <title>Toby AI</title>
 
 <style>
-* {
-  box-sizing: border-box;
+*{box-sizing:border-box}
+:root{
+  --bg:#080b18;
+  --panel:#10162a;
+  --panel2:#151d35;
+  --line:rgba(145,165,255,.15);
+  --text:#f4f6ff;
+  --muted:#9ba8c7;
+  --purple:#8b5cf6;
+  --blue:#438bff;
+  --cyan:#42d9ff;
 }
-
-:root {
-  --bg: #080b18;
-  --panel: #11162a;
-  --purple: #925cff;
-  --blue: #398dff;
-  --text: #f7f7ff;
-  --muted: #9ba4c0;
-}
-
-body {
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: block;
+body{
+  margin:0;
   background:
-    radial-gradient(ellipse at 15% 5%, #38206455, transparent 40%),
-    radial-gradient(ellipse at 90% 45%, #123b7950, transparent 45%),
+    radial-gradient(ellipse at 15% 0%,rgba(91,55,190,.20),transparent 38%),
+    radial-gradient(ellipse at 90% 90%,rgba(31,116,220,.13),transparent 40%),
     var(--bg);
-  color: var(--text);
-  font-family: Arial, sans-serif;
-  overflow-x: hidden;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-     }
-
-  background:
-    radial-gradient(ellipse at 15% 5%, #38206455, transparent 40%),
-    radial-gradient(ellipse at 90% 45%, #123b7950, transparent 45%),
-    var(--bg);
-
-  color: var(--text);
-  font-family: Arial, sans-serif;
+  color:var(--text);
+  font-family:Arial,sans-serif;
+  min-height:100vh;
 }
-
-header {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  padding: 18px;
-  background: #10152bea;
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid #ffffff12;
-  font-size: 23px;
-  font-weight: 800;
+button,input,textarea{font:inherit}
+button{cursor:pointer}
+.app{display:flex;height:100dvh;overflow:hidden}
+.sidebar{
+  width:275px;flex-shrink:0;background:rgba(10,15,31,.96);
+  border-right:1px solid var(--line);padding:18px;
+  display:flex;flex-direction:column;z-index:10;
 }
-
-header span {
-  color: #a77aff;
-  text-shadow: 0 0 15px #925cff;
+.brand{display:flex;align-items:center;gap:11px;margin-bottom:24px}
+.logo{
+  width:42px;height:42px;border-radius:14px;
+  display:grid;place-items:center;font-size:22px;font-weight:bold;
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  box-shadow:0 0 24px rgba(115,91,255,.35)
 }
-
-header a {
-  float: right;
-  color: #c6b0ff;
-  font-size: 14px;
-  text-decoration: none;
-  padding: 8px 13px;
-  background: #925cff20;
-  border: 1px solid #925cff50;
-  border-radius: 20px;
+.brand-name{font-size:21px;font-weight:800;letter-spacing:.3px}
+.brand-small{font-size:11px;color:var(--muted);margin-top:3px}
+.new-chat{
+  width:100%;padding:13px;border:1px solid rgba(139,92,246,.4);
+  border-radius:12px;color:white;font-weight:bold;
+  background:linear-gradient(110deg,rgba(139,92,246,.25),rgba(67,139,255,.16));
 }
-
-#account {
-  margin: 16px 14px;
-  padding: 20px 15px;
-  text-align: center;
-  background: linear-gradient(145deg, #191c37, #10182c);
-  border: 1px solid #8c69ff35;
-  border-radius: 22px;
-  box-shadow: 0 10px 35px #0005;
-  display: none;
+.section-label{
+  color:#7e8cac;font-size:11px;font-weight:bold;
+  letter-spacing:1.5px;margin:25px 0 10px;
 }
-
-#account h2 {
-  font-size: 21px;
-  margin-top: 5px;
+.recent-list{overflow-y:auto;flex:1}
+.recent-item{
+  width:100%;display:block;text-align:left;padding:11px 12px;
+  margin-bottom:5px;border:1px solid transparent;border-radius:10px;
+  background:transparent;color:#cbd4ee;white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;font-size:13px;
 }
-
-#account p {
-  line-height: 1.5;
+.recent-item:hover,.recent-item.active{
+  background:rgba(111,105,220,.14);border-color:var(--line);color:white
 }
-
-#accountStatus {
-  color: #bba4ff;
-  overflow-wrap: anywhere;
-  font-size: 14px;
+.usage-card{
+  padding:14px;border-radius:13px;background:var(--panel);
+  border:1px solid var(--line);margin-top:15px
 }
-
-#authButtons,
-#signedInControls {
-  margin-top: 15px;
+.usage-top{display:flex;justify-content:space-between;font-size:12px}
+.usage-top span:last-child{color:var(--cyan)}
+.progress{height:6px;background:#26304b;border-radius:10px;margin-top:11px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--cyan))}
+.account-button{
+  display:flex;align-items:center;gap:10px;width:100%;padding:12px;
+  margin-top:14px;border:1px solid var(--line);border-radius:12px;
+  background:var(--panel);color:white;text-align:left
 }
-
-#clerk-auth {
-  max-width: 420px;
-  margin: 20px auto;
+.avatar{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--purple),var(--blue));font-weight:bold
 }
-
-#profileBtn {
-  display: block;
-  margin: 12px 14px;
-  padding: 12px 18px;
-  background: #211b3c;
-  border: 1px solid #925cff70;
-  color: #d9c8ff;
+.account-info{min-width:0;flex:1}
+.account-info strong{font-size:13px;display:block}
+.account-info small{color:var(--muted);font-size:11px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative}
+.topbar{
+  height:66px;flex-shrink:0;display:flex;align-items:center;
+  justify-content:space-between;padding:0 23px;
+  border-bottom:1px solid var(--line);background:rgba(8,11,24,.65);
+  backdrop-filter:blur(14px)
 }
-
-#profilePanel {
-  display: none;
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 88%;
-  max-width: 380px;
-  max-height: 85vh;
-  overflow-y: auto;
-  padding: 24px;
-  border: 1px solid #925cff80;
-  border-radius: 24px;
-  background: #15182c;
-  color: white;
-  box-shadow: 0 0 45px #925cff35;
-  z-index: 9999;
-  text-align: center;
+.top-left{display:flex;align-items:center;gap:12px}
+.topbar h2{font-size:15px;margin:0}
+.status{font-size:11px;color:#70e7bd;display:flex;align-items:center;gap:6px}
+.status:before{content:"";width:7px;height:7px;border-radius:50%;background:#4de0a8}
+.icon-btn{
+  border:1px solid var(--line);background:var(--panel);color:white;
+  width:38px;height:38px;border-radius:11px;font-size:17px
 }
-
-#profilePanel button {
-  margin-top: 12px;
+.mobile-menu{display:none}
+.chat-area{flex:1;overflow-y:auto;padding:25px 18px 20px}
+.chat-content{max-width:850px;margin:0 auto}
+.welcome{text-align:center;padding:8vh 12px 25px}
+.welcome-logo{
+  width:75px;height:75px;border-radius:25px;margin:0 auto 20px;
+  display:grid;place-items:center;font-size:37px;
+  background:linear-gradient(135deg,var(--purple),var(--blue));
+  box-shadow:0 0 45px rgba(119,94,255,.3)
 }
-
-#chat {
-  display: block;
-  width: 100%;
-  min-height: 60vh;
-  height: auto;
-  padding: 15px;
-  padding-bottom: 30px;
-  overflow: visible;
-  touch-action: auto;
-  -webkit-overflow-scrolling: auto;
+.welcome h1{font-size:clamp(27px,5vw,42px);margin:0 0 12px}
+.gradient{
+  background:linear-gradient(90deg,#b99aff,#53caff);
+  -webkit-background-clip:text;background-clip:text;color:transparent
 }
-
-.message {
-  max-width: 88%;
-  padding: 14px 16px;
-  margin: 13px 0;
-  border-radius: 18px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  font-size: 15px;
+.welcome p{color:var(--muted);line-height:1.6;font-size:14px}
+.suggestions{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;max-width:650px;margin:25px auto
 }
-
-.user {
-  margin-left: auto;
-  background: linear-gradient(135deg, #713cff, #287fe9);
-  border: 1px solid #a98aff55;
-  border-bottom-right-radius: 5px;
-  box-shadow: 0 5px 20px #6239d52b;
+.suggestion{
+  text-align:left;padding:15px;border:1px solid var(--line);
+  border-radius:13px;background:rgba(20,29,53,.7);color:white;
+  font-size:13px;line-height:1.5
 }
-
-.bot {
-  margin-right: auto;
-  background: #171e34;
-  border: 1px solid #8295d025;
-  border-bottom-left-radius: 5px;
+.suggestion:hover{border-color:var(--purple);background:rgba(139,92,246,.12)}
+.suggestion span{display:block;font-size:19px;margin-bottom:7px}
+.message{display:flex;gap:11px;margin:22px 0;align-items:flex-start}
+.message.user{flex-direction:row-reverse}
+.message-avatar{
+  width:32px;height:32px;flex-shrink:0;border-radius:11px;
+  display:grid;place-items:center;font-size:13px;font-weight:bold;
+  background:linear-gradient(135deg,var(--purple),var(--blue))
 }
-.controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px;
-  padding-bottom: max(10px, env(safe-area-inset-bottom));
-  background: #101529f5;
-  border-top: 1px solid #ffffff20;
-  backdrop-filter: blur(18px);
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  flex-shrink: 0;
-  z-index: 30;
+.message.user .message-avatar{background:#263958}
+.message-body{max-width:min(82%,700px);min-width:0}
+.message-name{font-size:11px;color:var(--muted);margin:2px 0 7px}
+.message.user .message-name{text-align:right}
+.bubble{
+  padding:13px 15px;border:1px solid var(--line);border-radius:4px 15px 15px;
+  background:rgba(20,28,50,.85);font-size:14px;line-height:1.7;
+  overflow-wrap:anywhere;white-space:pre-wrap
 }
-
-#chatInput {
-  min-height: 70px;
+.message.user .bubble{
+  background:linear-gradient(135deg,rgba(104,76,190,.35),rgba(43,104,180,.25));
+  border-radius:15px 4px 15px 15px
 }
-
-#message {
-  flex: 1;
-  min-width: 0;
-  height: 50px;
-  font-size: 16px;
+.bubble img{max-width:100%;border-radius:10px}
+.message-actions{display:flex;gap:7px;margin-top:7px}
+.message-actions button{
+  background:transparent;border:1px solid var(--line);color:var(--muted);
+  border-radius:8px;padding:5px 9px;font-size:11px
 }
-
-#chatInput {
-  min-height: 70px;
+.typing{color:var(--muted);font-size:13px;padding:10px}
+.composer-wrap{
+  padding:12px 18px 18px;background:linear-gradient(transparent,rgba(8,11,24,.96) 22%)
 }
-
-#message {
-  min-width: 0;
-  height: 54px;
-  font-size: 16px;
+.composer{max-width:850px;margin:auto}
+.attachment-preview{
+  display:none;padding:8px 12px;margin-bottom:8px;
+  border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px
 }
-
-input {
-  flex: 1;
-  min-width: 0;
-  padding: 15px;
-  border-radius: 18px;
-  border: 1px solid #7184c044;
-  outline: none;
-  background: #1a2138;
-  color: white;
-  font-size: 15px;
+.input-box{
+  display:flex;align-items:flex-end;gap:8px;padding:10px;
+  border:1px solid rgba(137,151,255,.25);border-radius:18px;
+  background:rgba(17,24,45,.97);
+  box-shadow:0 10px 35px rgba(0,0,0,.22)
 }
-
-input:focus {
-  border-color: #925cff;
-  box-shadow: 0 0 15px #925cff30;
+.input-box:focus-within{border-color:rgba(139,92,246,.8);box-shadow:0 0 0 3px rgba(139,92,246,.09)}
+#message{
+  flex:1;min-width:0;max-height:150px;resize:none;outline:none;
+  border:0;background:transparent;color:white;padding:10px 5px;
+  font-size:14px;line-height:1.5
 }
-
-input::placeholder {
-  color: #8993b2;
+#message::placeholder{color:#74809e}
+.tool-btn{
+  width:38px;height:38px;flex-shrink:0;border:0;border-radius:11px;
+  background:transparent;color:#aebbd8;font-size:18px
 }
-
-button {
-  border: 0;
-  border-radius: 15px;
-  padding: 12px 16px;
-  background: linear-gradient(135deg, #925cff, #397fff);
-  color: white;
-  font-size: 15px;
-  font-weight: bold;
-  cursor: pointer;
-  box-shadow: 0 4px 15px #653bce35;
+.tool-btn:hover{background:#252e4b;color:white}
+.send-btn{
+  width:40px;height:40px;flex-shrink:0;border:0;border-radius:12px;
+  color:white;background:linear-gradient(135deg,var(--purple),var(--blue));
+  font-size:17px
 }
-
-button:active {
-  transform: scale(.96);
+.send-btn:disabled{opacity:.45;cursor:not-allowed}
+.disclaimer{text-align:center;color:#77829e;font-size:10px;margin-top:10px}
+.hidden-input{display:none}
+.attach-menu{
+  display:none;position:absolute;bottom:88px;left:18px;
+  background:#18213b;border:1px solid var(--line);border-radius:12px;
+  padding:7px;z-index:5;box-shadow:0 10px 30px #0008
 }
-
-button:disabled {
-  opacity: .5;
-  cursor: not-allowed;
+.attach-menu button{
+  display:block;width:100%;text-align:left;padding:11px 15px;
+  border:0;background:transparent;color:white;border-radius:8px;font-size:13px
 }
-
-#chatInput button {
-  min-width: 46px;
+.attach-menu button:hover{background:#293456}
+.overlay{
+  display:none;position:fixed;inset:0;background:#0009;z-index:30;
+  align-items:center;justify-content:center;padding:18px
 }
-
-#authButtons button {
-  margin: 4px;
+.modal{
+  width:min(420px,100%);padding:23px;border:1px solid var(--line);
+  border-radius:18px;background:#111a30;box-shadow:0 20px 70px #0009
 }
-
-
-/* PREMIUM SIDEBAR */
-
-#menuBtn {
-  background: #211b3c;
-  border: 1px solid #925cff70;
-  margin-right: 8px;
-  padding: 9px 13px;
+.modal h2{margin:0 0 8px;font-size:20px}
+.modal p{color:var(--muted);font-size:13px;line-height:1.6}
+.modal-actions{display:flex;gap:9px;margin-top:20px}
+.primary,.secondary{
+  flex:1;padding:12px;border-radius:10px;font-weight:bold
 }
-
-#sidebar {
-  position: fixed;
-  top: 0;
-  left: -290px;
-  width: 270px;
-  height: 100dvh;
-  padding: 25px 18px;
-  background: linear-gradient(160deg, #17152e, #0c1428);
-  border-right: 1px solid #925cff70;
-  box-shadow: 10px 0 35px #0008;
-  z-index: 1001;
-  transition: left .3s ease;
+.primary{border:0;color:white;background:linear-gradient(120deg,var(--purple),var(--blue))}
+.secondary{border:1px solid var(--line);color:white;background:var(--panel)}
+#toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  background:#202b48;color:white;padding:11px 16px;border-radius:10px;
+  font-size:13px;z-index:100;display:none;max-width:90%;text-align:center
 }
-
-#sidebar.open {
-  left: 0;
-}
-
-#sidebar h2 {
-  color: #c3a2ff;
-  margin-bottom: 30px;
-}
-
-#sidebar button,
-#sidebar a {
-  display: block;
-  width: 100%;
-  margin: 12px 0;
-  padding: 14px;
-  text-align: left;
-  text-decoration: none;
-  color: white;
-  background: #24213e;
-  border: 1px solid #925cff40;
-  border-radius: 13px;
-  font-size: 15px;
-}
-
-#sidebar button:first-of-type {
-  background: linear-gradient(135deg, #925cff, #397fff);
-}
-
-.sidebar-heading {
-  margin-top: 30px;
-  color: #929bb8;
-  font-size: 11px;
-  letter-spacing: 2px;
-}
-
-.sidebar-footer {
-  position: absolute;
-  bottom: 20px;
-  color: #929bb8;
-  font-size: 12px;
-}
-
-#sidebarOverlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: #0009;
-  z-index: 1000;
-}
-
-#sidebarOverlay.show {
-  display: block;
+@media(max-width:720px){
+  .sidebar{
+    position:fixed;top:0;bottom:0;left:0;
+    transform:translateX(-105%);transition:transform .25s;
+    box-shadow:15px 0 40px #0007
   }
-/* TOBY AI ANIMATED WELCOME */
-
-.welcome-screen {
-  text-align: center;
-  padding: 35px 15px;
-  animation: welcomeFade 1s ease;
+  .sidebar.open{transform:translateX(0)}
+  .mobile-menu{display:inline-block}
+  .topbar{padding:0 13px}
+  .chat-area{padding:15px 12px}
+  .composer-wrap{padding:8px 10px 12px}
+  .suggestions{grid-template-columns:1fr}
+  .welcome{padding-top:5vh}
+  .message-body{max-width:86%}
 }
-
-.welcome-orb {
-  width: 90px;
-  height: 90px;
-  margin: 10px auto 22px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #925cff, #397fff);
-  box-shadow: 0 0 25px #925cff, 0 0 55px #397fff80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 42px;
-  animation: orbFloat 3s ease-in-out infinite;
-}
-
-.welcome-screen h2 {
-  color: white;
-  font-size: 25px;
-  margin-bottom: 10px;
-}
-
-.welcome-screen p {
-  color: #aeb8d5;
-  font-size: 14px;
-}
-
-@keyframes orbFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
-}
-
-@keyframes welcomeFade {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-.attach-menu {
-  position: relative;
-}
-
-.attach-options {
-  position: absolute;
-  bottom: 55px;
-  left: 0;
-  width: 190px;
-  padding: 8px;
-  background: #171b30;
-  border: 1px solid #343b59;
-  border-radius: 12px;
-  z-index: 1000;
-  box-shadow: 0 5px 20px #0008;
-}
-
-.attach-options button {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  margin: 3px 0;
-  text-align: left;
-  background: transparent;
-  color: white;
-  border: none;
-  border-radius: 8px;
-}
-
-.attach-options button:active {
-  background: #343b59;
-   }
-/* TOBY AI READ ALOUD PLAYER */
-
-.message.bot {
-  position: relative;
-}
-
-.read-aloud-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 12px;
-  padding: 8px 12px;
-  border: 1px solid #925cff55;
-  border-radius: 20px;
-  background: #24213e;
-  color: #d9c8ff;
-  font-size: 13px;
-  box-shadow: none;
-}
-
-.read-aloud-btn:active {
-  background: #38305e;
-}
-
-.toby-audio-player {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 12px;
-  padding: 12px;
-  background: #252638;
-  border: 1px solid #ffffff20;
-  border-radius: 18px;
-  width: 100%;
-}
-
-.audio-play-btn {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  padding: 0;
-  border-radius: 50%;
-  font-size: 18px;
-}
-
-.audio-time {
-  color: white;
-  font-size: 12px;
-  min-width: 35px;
-}
-
-.audio-wave {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
-  flex: 1;
-  height: 38px;
-  overflow: hidden;
-}
-
-.audio-wave span {
-  display: block;
-  width: 3px;
-  height: 8px;
-  border-radius: 5px;
-  background: #b99aff;
-}
-
-.audio-wave.playing span {
-  animation: tobyWave .65s ease-in-out infinite alternate;
-}
-
-.audio-wave span:nth-child(3n) {
-  animation-delay: .2s;
-}
-
-.audio-wave span:nth-child(3n + 1) {
-  animation-delay: .4s;
-}
-
-@keyframes tobyWave {
-  from { height: 5px; }
-  to { height: 30px; }
-}
-
-.audio-close-btn {
-  background: transparent;
-  box-shadow: none;
-  padding: 5px;
-  font-size: 21px;
-}
-
 </style>
 </head>
 
 <body>
-
-<header>
-  <button id="menuBtn" onclick="toggleSidebar()">☰</button>
-  🤖 Toby <span>AI</span>
-  <a href="/plans.html">Plans</a>
-</header>
-<div id="sidebarOverlay" onclick="toggleSidebar()"></div>
-
-<aside id="sidebar">
-  <h2>🤖 Toby AI</h2>
-
-  <button onclick="newChat()">＋ New Chat</button>
-<button onclick="loadConversations()">🕘 Recent Chats</button>
-
-<div id="recentChats"></div>
-  <button onclick="openAccount()">👤 Account / Sign In</button>
-<button onclick="showUsage()">💎 Free Plan Usage</button>
-     <div class="sidebar-heading">YOUR SPACE</div>
-
-  <button onclick="openProfile()">👤 My Profile</button>
-
-  <a href="/plans.html">💎 Plans</a>
-
-  <p class="sidebar-footer">Powered by Toby AI</p>
-</aside>
-<section id="account">
-  <h2>Welcome to Toby AI ✨</h2>
-  <p id="accountStatus">Loading account service...</p>
-
-  <div id="authButtons" style="display:none">
-    <button onclick="showSignUp()">Create Account</button>
-    <button onclick="showSignIn()">Log In</button>
-  </div>
-
-  <div id="clerk-auth"></div>
-
-  <div id="signedInControls" style="display:none">
-    <p>You're signed in to Toby AI!</p>
-    <button onclick="logOut()">Log Out</button>
-  </div>
-</section>
-<section id="usagePanel" style="
-  display:none;
-  margin:12px 14px;
-  padding:15px;
-  background:#15182c;
-  border:1px solid #925cff70;
-  border-radius:18px;
-">
-  <div style="display:flex;justify-content:space-between">
-    <strong>💎 Free Plan</strong>
-    <span id="usageCount">Loading...</span>
-  </div>
-
-  <div style="
-    height:9px;
-    background:#30344d;
-    border-radius:20px;
-    margin-top:12px;
-    overflow:hidden;
-  ">
-    <div id="usageBar" style="
-      height:100%;
-      width:0%;
-      background:linear-gradient(90deg,#925cff,#398dff);
-      border-radius:20px;
-    "></div>
-  </div>
-
-  <p id="usageRemaining" style="
-    color:#aeb8d5;
-    font-size:13px;
-    margin-bottom:0;
-  ">Checking your messages...</p>
-</section>
-<button id="profileBtn" onclick="openProfile()">
-  👤 My Profile
-</button>
-
-<div id="profilePanel">
-  <h2>My Profile</h2>
-  <div id="clerkProfile"></div>
-  <button onclick="closeProfile()">Close</button>
-</div>
-
-<main id="chat">
-  <div class="welcome-screen">
-    <div class="welcome-orb">🤖</div>
-
-    <h2>Hey, I'm Toby AI!</h2>
-
-    <p>Your smart AI assistant. Ready to help you explore, learn and create.</p>
-
-    <div class="suggestions">
-      <button onclick="askSuggestion('Explain something to me in simple steps.')">
-        💡 Explain something
-      </button>
-
-      <button onclick="askSuggestion('Help me write something creative.')">
-        ✍️ Help me write
-      </button>
-
-      <button onclick="askSuggestion('Help me with coding.')">
-        💻 Help me code
-      </button>
-
-      <button onclick="askSuggestion('Teach me something interesting.')">
-        🌍 Teach me something
-      </button>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="logo">T</div>
+      <div>
+        <div class="brand-name">Toby AI</div>
+        <div class="brand-small">Your intelligent assistant</div>
+      </div>
     </div>
 
-  </div>
-</main>
+    <button class="new-chat" onclick="newChat()">＋ New chat</button>
 
-<div class="controls" id="chatInput">
+    <div class="section-label">RECENT CHATS</div>
+    <div class="recent-list" id="recentChats">
+      <div class="typing">Loading conversations...</div>
+    </div>
 
-  <div class="attach-menu">
-    <button type="button" id="plusBtn" onclick="toggleAttachMenu()">＋</button>
-<div id="attachmentPreview" style="display:none; padding:10px;">
+    <div class="usage-card">
+      <div class="usage-top">
+        <span>Daily messages</span>
+        <span id="usageText">Loading...</span>
+      </div>
+      <div class="progress"><div class="progress-fill" id="usageBar"></div></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:8px">Free plan · Resets daily</div>
+    </div>
+
+    <button class="account-button" onclick="openAccount()">
+      <div class="avatar" id="accountAvatar">T</div>
+      <div class="account-info">
+        <strong id="accountName">My account</strong>
+        <small id="accountEmail">Sign in to Toby AI</small>
+      </div>
+      <span>›</span>
+    </button>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button class="icon-btn mobile-menu" onclick="toggleSidebar()">☰</button>
+        <h2>Toby AI</h2>
+        <span class="status">Online</span>
+      </div>
+      <button class="icon-btn" onclick="newChat()" title="New chat">＋</button>
+    </header>
+
+    <section class="chat-area" id="chat">
+      <div class="chat-content" id="chatContent">
+        <div class="welcome" id="welcome">
+          <div class="welcome-logo">✦</div>
+          <h1>Meet <span class="gradient">Toby AI</span></h1>
+          <p>Your smart assistant for learning, creating, and exploring ideas.</p>
+          <div class="suggestions">
+            <button class="suggestion" onclick="askSuggestion('Explain a difficult school topic in simple steps.')">
+              <span>📚</span><strong>Learn something</strong><br>Explain a school topic simply.
+            </button>
+            <button class="suggestion" onclick="askSuggestion('Help me write a good composition.')">
+              <span>✍️</span><strong>Writing help</strong><br>Improve my writing skills.
+            </button>
+            <button class="suggestion" onclick="askSuggestion('Give me a fun quiz and test what I know.')">
+              <span>🧠</span><strong>Take a quiz</strong><br>Test what I understand.
+            </button>
+            <button class="suggestion" onclick="askSuggestion('Give me creative ideas for a project.')">
+              <span>💡</span><strong>Get ideas</strong><br>Explore something creative.
+            </button>
+          </div>
+        </div>
+        <div id="messages"></div>
+      </div>
+    </section>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <div class="attachment-preview" id="attachmentPreview"></div>
+        <div class="input-box">
+          <button class="tool-btn" onclick="toggleAttachMenu()" title="Attach file">＋</button>
+          <textarea id="message" rows="1" placeholder="Message Toby AI..." onkeydown="handleEnter(event)" oninput="resizeInput()"></textarea>
+          <button class="tool-btn" onclick="listen()" title="Voice input">🎙</button>
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="Send">➤</button>
+        </div>
+        <div class="disclaimer">Toby AI can make mistakes. Check important information.</div>
+      </div>
+    </div>
+
+    <div class="attach-menu" id="attachMenu">
+      <button onclick="chooseFile()">📎 Upload a file or image</button>
+      <button onclick="generateImage()">🎨 Generate an image</button>
+    </div>
+    <input class="hidden-input" type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,application/pdf,text/plain" onchange="handleAttachment(event)">
+  </main>
 </div>
-    <div id="attachOptions" class="attach-options" style="display:none;">
-      <button onclick="document.getElementById('filePicker').click()">📎 Attach files</button>
-      <button onclick="document.getElementById('cameraPicker').click()">📷 Take photo</button>
-      <button onclick="document.getElementById('galleryPicker').click()">🖼️ Gallery</button>
-      <button onclick="pasteContent()">📋 Paste</button>
-      <button onclick="alert('Image generation is coming soon!')">🎨 Generate image</button>
+
+<div class="overlay" id="accountModal" onclick="if(event.target===this)closeAccount()">
+  <div class="modal">
+    <h2>My account</h2>
+    <p id="accountStatus">Sign in to save your conversations and access your account.</p>
+    <div id="clerkAccount"></div>
+    <div class="modal-actions" id="accountActions">
+      <button class="primary" onclick="signIn()">Sign in</button>
+      <button class="secondary" onclick="signUp()">Create account</button>
+    </div>
+    <button class="secondary" style="width:100%;margin-top:10px" onclick="closeAccount()">Close</button>
+  </div>
+</div>
+
+<div class="overlay" id="imageModal" onclick="if(event.target===this)closeImageModal()">
+  <div class="modal">
+    <h2>Generate an image</h2>
+    <p>Describe the image you want Toby AI to create.</p>
+    <textarea id="imagePrompt" rows="3" placeholder="Describe your image..." style="width:100%;padding:12px;border-radius:10px;background:#080e20;border:1px solid var(--line);color:white;resize:vertical"></textarea>
+    <div class="modal-actions">
+      <button class="primary" onclick="submitImageGeneration()">Generate</button>
+      <button class="secondary" onclick="closeImageModal()">Cancel</button>
     </div>
   </div>
-
-  <input type="file" id="filePicker" accept="image/*,.pdf,.txt" hidden onchange="handleAttachment(this)">
-  <input type="file" id="cameraPicker" accept="image/*" capture="environment" hidden onchange="handleAttachment(this)">
-  <input type="file" id="galleryPicker" accept="image/*" hidden onchange="handleAttachment(this)">
-
-  <input id="message" type="text" placeholder="Ask Toby anything..." autocomplete="off">
-
-  <button id="sendBtn" onclick="sendMessage()">➤</button>
-  <button onclick="listen()">🎤</button>
-
 </div>
+
+<div id="toast"></div>
 
 <script>
-// =====================================
-// TOBY AI CONFIGURATION
-// =====================================
+"use strict";
 
-// Keep your existing Clerk PUBLIC key here.
-// Do not put your Clerk SECRET key here.
-
+/* Toby AI frontend configuration */
 const CLERK_PUBLISHABLE_KEY =
   "pk_test_YWR2YW5jZWQtZmlsbHktOTcxOC5jbGVyay5hY2NvdW50cy5kZXYk";
 
-// =====================================
-// TOBY AI VARIABLES
-// =====================================
+let clerk = null;
+let messages = [];
+let conversationId = null;
+let selectedAttachment = null;
+let isSending = false;
+let recognition = null;
 
-const chat = document.getElementById("chat");
-const input = document.getElementById("message");
-const sendBtn = document.getElementById("sendBtn");
+const $ = id => document.getElementById(id);
 
-const messages = [];
-
-let currentConversationId = null;
-
-let clerkReady = false;
-let clerkLoading = false;
-// =====================================
-// DAILY MESSAGE COUNTER
-// =====================================
-
-async function loadUsage() {
-  const panel = document.getElementById("usagePanel");
-
-  if (!window.Clerk || !window.Clerk.isSignedIn) {
-    panel.style.display = "none";
-    return;
-  }
-
-  try {
-    const token = await window.Clerk.session.getToken();
-
-    const response = await fetch("/usage", {
-      headers: {
-        "Authorization": `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Usage unavailable");
-    }
-
-    const used = data.used;
-    const limit = data.limit;
-    const remaining = data.remaining;
-    const percentage = Math.min(100, (used / limit) * 100);
-
-    document.getElementById("usageCount").textContent =
-      `${used}/${limit}`;
-
-    document.getElementById("usageBar").style.width =
-      percentage + "%";
-
-    document.getElementById("usageRemaining").textContent =
-      `${remaining} free messages remaining today`;
-
-    panel.style.display = "block";
-
-  } catch (error) {
-    console.error("Usage display error:", error);
-  }
-   }
-// =====================================
-// MESSAGE SYSTEM
-// =====================================
-
-
-function addMessage(text, type) {
-  const div = document.createElement("div");
-
-  div.className = "message " + type;
-
-  const content = document.createElement("div");
-  content.textContent = text;
-  div.appendChild(content);
-
-  if (type === "bot") {
-    const readBtn = document.createElement("button");
-
-    readBtn.className = "read-aloud-btn";
-    readBtn.type = "button";
-    readBtn.textContent = "🔊 Read aloud";
-
-    readBtn.onclick = () => readAloud(text, div, readBtn);
-
-    div.appendChild(readBtn);
-  }
-
-  chat.appendChild(div);
-  chat.scrollTop = chat.scrollHeight;
+function toast(message) {
+  const el = $("toast");
+  el.textContent = message;
+  el.style.display = "block";
+  clearTimeout(window.toastTimer);
+  window.toastTimer = setTimeout(() => el.style.display = "none", 3500);
 }
 
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(options.body ? {"Content-Type":"application/json"} : {})
+    }
+  });
 
-// =====================================
-// LOAD EXTERNAL SCRIPT SAFELY
-// =====================================
+  const type = response.headers.get("content-type") || "";
+  if (!type.includes("application/json")) {
+    const text = await response.text();
+    if (text.trim().startsWith("<")) {
+      throw new Error("The server returned a webpage instead of JSON. Please check that the backend route is deployed.");
+    }
+    throw new Error("The server returned an unexpected response.");
+  }
 
-function loadScript(src, publishableKey = null) {
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || data.message || "Request failed. Please try again.");
+  }
+  return data;
+}
 
-    let finished = false;
+function escapeText(value) {
+  return String(value ?? "");
+}
 
-    const timeout = setTimeout(() => {
-      finish(new Error("Script loading timed out: " + src));
-    }, 20000);
+function hideWelcome() {
+  $("welcome").style.display = "none";
+}
 
-    function finish(error) {
-      if (finished) return;
+function showWelcome() {
+  $("welcome").style.display = "block";
+  $("messages").replaceChildren();
+}
 
-      finished = true;
-      clearTimeout(timeout);
+function addMessage(role, content, options = {}) {
+  hideWelcome();
 
-      if (error) {
-        script.remove();
-        reject(error);
-      } else {
-        resolve();
+  const wrapper = document.createElement("div");
+  wrapper.className = "message " + (role === "user" ? "user" : "assistant");
+
+  const avatar = document.createElement("div");
+  avatar.className = "message-avatar";
+  avatar.textContent = role === "user" ? "Y" : "T";
+
+  const body = document.createElement("div");
+  body.className = "message-body";
+
+  const name = document.createElement("div");
+  name.className = "message-name";
+  name.textContent = role === "user" ? "You" : "Toby AI";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = escapeText(content);
+
+  if (options.imageUrl) {
+    const image = document.createElement("img");
+    image.src = options.imageUrl;
+    image.alt = "Generated image";
+    bubble.appendChild(document.createElement("br"));
+    bubble.appendChild(image);
+  }
+
+  body.append(name, bubble);
+
+  if (role !== "user") {
+    const actions = document.createElement("div");
+    actions.className = "message-actions";
+
+    const speak = document.createElement("button");
+    speak.textContent = "🔊 Read aloud";
+    speak.onclick = () => speakText(content);
+
+    const copy = document.createElement("button");
+    copy.textContent = "Copy";
+    copy.onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(String(content));
+        toast("Copied.");
+      } catch {
+        toast("Copy is not available in this browser.");
       }
-    }
-
-    script.src = src;
-    script.async = true;
-    script.crossOrigin = "anonymous";
-
-    if (publishableKey) {
-      script.setAttribute(
-        "data-clerk-publishable-key",
-        publishableKey
-      );
-    }
-
-    script.onload = () => finish();
-
-    script.onerror = () => {
-      finish(new Error("Could not load Clerk script."));
     };
 
-    document.head.appendChild(script);
-  });
-}
-
-// =====================================
-// CLERK ACCOUNT SERVICE
-// =====================================
-
-async function loadClerk() {
-  if (clerkLoading || clerkReady) return;
-
-  clerkLoading = true;
-
-  const status = document.getElementById("accountStatus");
-
-  try {
-    status.textContent = "Checking Clerk configuration...";
-
-    if (
-      !CLERK_PUBLISHABLE_KEY ||
-      (
-        !CLERK_PUBLISHABLE_KEY.startsWith("pk_test_") &&
-        !CLERK_PUBLISHABLE_KEY.startsWith("pk_live_")
-      )
-    ) {
-      throw new Error("Invalid Clerk Publishable Key.");
-    }
-
-    let clerkDomain;
-
-    try {
-      clerkDomain = atob(
-        CLERK_PUBLISHABLE_KEY.split("_")[2]
-      ).slice(0, -1);
-    } catch {
-      throw new Error("Could not decode Clerk domain.");
-    }
-
-    if (!clerkDomain || !clerkDomain.includes(".")) {
-      throw new Error("Invalid Clerk domain.");
-    }
-
-    status.textContent = "Loading Clerk UI...";
-
-    await loadScript(
-      `https://${clerkDomain}/npm/@clerk/ui@1/dist/ui.browser.js`
-    );
-
-    status.textContent = "Loading Clerk SDK...";
-
-    await loadScript(
-      `https://${clerkDomain}/npm/@clerk/clerk-js@6/dist/clerk.browser.js`,
-      CLERK_PUBLISHABLE_KEY
-    );
-
-    if (!window.Clerk) {
-      throw new Error("Clerk SDK did not initialize.");
-    }
-
-    status.textContent = "Connecting your account...";
-
-    await window.Clerk.load({
-      ui: {
-        ClerkUI: window.__internal_ClerkUICtor
-      }
-    });
-
-    clerkReady = true;
-    clerkLoading = false;
-
-    console.log("Toby AI: Clerk successfully loaded.");
-
-    renderAccount();
-
-    window.Clerk.addListener(() => {
-      renderAccount();
-    });
-
-  } catch (error) {
-    clerkLoading = false;
-    clerkReady = false;
-
-    console.error("Toby AI Clerk error:", error);
-
-    status.textContent = "Account error: " + error.message;
-
-    document.getElementById("authButtons").style.display = "none";
+    actions.append(speak, copy);
+    body.appendChild(actions);
   }
+
+  wrapper.append(avatar, body);
+  $("messages").appendChild(wrapper);
+  $("chat").scrollTop = $("chat").scrollHeight;
 }
 
-// =====================================
-// ACCOUNT DISPLAY
-// =====================================
-
-function renderAccount() {
-  const status = document.getElementById("accountStatus");
-  const buttons = document.getElementById("authButtons");
-  const controls = document.getElementById("signedInControls");
-  const auth = document.getElementById("clerk-auth");
-
-  const clerk = window.Clerk;
-
-  if (!clerkReady || !clerk) return;
-
-  if (clerk.isSignedIn) {
-    status.textContent = "Welcome to Toby AI!";
-    loadUsage();
-    loadConversations();
-     buttons.style.display = "none";
-    controls.style.display = "block";
-    auth.innerHTML = "";
-
-  } else {
-    status.textContent = "Sign in or create your account.";
-
-    buttons.style.display = "block";
-    controls.style.display = "none";
-  }
+function showTyping() {
+  const el = document.createElement("div");
+  el.className = "typing";
+  el.id = "typingIndicator";
+  el.textContent = "Toby AI is thinking...";
+  $("messages").appendChild(el);
+  $("chat").scrollTop = $("chat").scrollHeight;
 }
 
-// =====================================
-// SIGN UP
-// =====================================
-
-function showSignUp() {
-  if (!clerkReady || !window.Clerk) return;
-
-  const auth = document.getElementById("clerk-auth");
-
-  auth.innerHTML = "";
-
-  try {
-    window.Clerk.mountSignUp(auth);
-  } catch (error) {
-    console.error(error);
-    addMessage("Could not open sign-up. Please try again.", "bot");
-  }
+function removeTyping() {
+  const el = $("typingIndicator");
+  if (el) el.remove();
 }
 
-// =====================================
-// SIGN IN
-// =====================================
+async function sendMessage() {
+  if (isSending) return;
 
-function showSignIn() {
-  if (!clerkReady || !window.Clerk) return;
+  const input = $("message");
+  const text = input.value.trim();
 
-  const auth = document.getElementById("clerk-auth");
-
-  auth.innerHTML = "";
-
-  try {
-    window.Clerk.mountSignIn(auth);
-  } catch (error) {
-    console.error(error);
-    addMessage("Could not open login. Please try again.", "bot");
-  }
-}
-
-// =====================================
-// LOG OUT
-// =====================================
-
-async function logOut() {
-  if (!clerkReady || !window.Clerk) return;
-
-  try {
-    await window.Clerk.signOut();
-
-    document.getElementById("clerk-auth").innerHTML = "";
-
-    closeProfile();
-    renderAccount();
-
-  } catch (error) {
-    console.error(error);
-    addMessage("Could not log out. Please try again.", "bot");
-  }
-}
-
-// =====================================
-// USER PROFILE
-// =====================================
-
-function openProfile() {
-  const panel = document.getElementById("profilePanel");
-  const profile = document.getElementById("clerkProfile");
-  const clerk = window.Clerk;
-
-  if (!clerkReady || !clerk || !clerk.user) {
-    alert("Please log in first.");
+  if (!text && !selectedAttachment) {
+    toast("Type a message or attach a file first.");
     return;
   }
 
-  panel.style.display = "block";
-  profile.innerHTML = "";
+  if (!clerk || !clerk.user) {
+    toast("Please sign in before sending a message.");
+    openAccount();
+    return;
+  }
 
-  const user = clerk.user;
+  isSending = true;
+  $("sendBtn").disabled = true;
 
-  const avatar = document.createElement("img");
+  const userText = text || ("Please read this attachment: " + selectedAttachment.name);
+  messages.push({role:"user", content:userText});
+  addMessage("user", userText);
 
-  avatar.src = user.imageUrl || "";
-  avatar.alt = "Profile picture";
-  avatar.style.width = "85px";
-  avatar.style.height = "85px";
-  avatar.style.borderRadius = "50%";
-  avatar.style.objectFit = "cover";
+  input.value = "";
+  resizeInput();
 
-  const name = document.createElement("h3");
-  name.textContent = user.fullName || "Toby AI User";
+  const attachmentToSend = selectedAttachment;
+  selectedAttachment = null;
+  $("attachmentPreview").style.display = "none";
 
-  const username = document.createElement("p");
-  username.textContent = "@" + (user.username || "no-username");
-
-  const email = document.createElement("p");
-
-  email.textContent = user.primaryEmailAddress
-    ? user.primaryEmailAddress.emailAddress
-    : "No email available";
-
-  profile.append(avatar, name, username, email);
-}
-
-function closeProfile() {
-  document.getElementById("profilePanel").style.display = "none";
-}
-
-// =====================================
-// TEXT TO SPEECH
-// =====================================
-
-async function speakReply(text) {
-  if (!text) return;
+  showTyping();
 
   try {
-    const token = await window.Clerk.session.getToken();
-
-    const response = await fetch("/speak", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ text })
+    const data = await api("/chat", {
+      method:"POST",
+      body:JSON.stringify({
+        messages:messages,
+        conversationId:conversationId,
+        attachment:attachmentToSend
+      })
     });
 
-    const result = await response.json();
+    removeTyping();
 
-    if (!response.ok || !result.audio) {
-      throw new Error("Natural voice unavailable");
-    }
+    const reply = data.reply || data.response || data.message ||
+      data.text || "I received your message, but no reply text was returned.";
 
-    if (window.tobyAudio) {
-      window.tobyAudio.pause();
-    }
+    if (data.conversationId) conversationId = data.conversationId;
 
-    window.tobyAudio = new Audio(
-      `data:${result.mimeType || "audio/wav"};base64,${result.audio}`
-    );
+    messages.push({role:"assistant",content:reply});
+    addMessage("assistant", reply);
 
-    await window.tobyAudio.play();
-
+    await Promise.allSettled([loadUsage(), loadConversations()]);
   } catch (error) {
-    console.error("Using backup voice:", error);
-
-    // Keep the original phone voice as backup.
-    if (!("speechSynthesis" in window)) return;
-
-    window.speechSynthesis.cancel();
-
-    const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "en-US";
-    speech.rate = 0.95;
-    speech.pitch = 0.85;
-
-    window.speechSynthesis.speak(speech);
+    removeTyping();
+    messages.pop();
+    addMessage("assistant", "Sorry, I couldn't complete that request. " + error.message);
+  } finally {
+    isSending = false;
+    $("sendBtn").disabled = false;
+    input.focus();
   }
- }
+}
 
-// =====================================
-// TOBY AI READ ALOUD PLAYER
-// =====================================
+function handleEnter(event) {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    sendMessage();
+  }
+}
 
-let tobySpeech = null;
-let tobySpeaking = false;
-let tobyPaused = false;
-let tobyStartTime = 0;
+function resizeInput() {
+  const input = $("message");
+  input.style.height = "auto";
+  input.style.height = Math.min(input.scrollHeight, 150) + "px";
+}
 
-function readAloud(text, messageDiv, readBtn) {
+function askSuggestion(text) {
+  $("message").value = text;
+  sendMessage();
+}
+
+function newChat() {
+  conversationId = null;
+  messages = [];
+  selectedAttachment = null;
+  $("message").value = "";
+  $("attachmentPreview").style.display = "none";
+  showWelcome();
+  closeSidebarOnMobile();
+  $("message").focus();
+}
+
+async function loadConversations() {
+  if (!clerk || !clerk.user) {
+    $("recentChats").textContent = "Sign in to see your chats.";
+    return;
+  }
+
+  try {
+    const data = await api("/conversations");
+    const conversations = Array.isArray(data) ? data :
+      (data.conversations || data.items || []);
+
+    const list = $("recentChats");
+    list.replaceChildren();
+
+    if (!conversations.length) {
+      list.textContent = "No conversations yet.";
+      return;
+    }
+
+    conversations.forEach(item => {
+      const button = document.createElement("button");
+      button.className = "recent-item" +
+        (String(item.id) === String(conversationId) ? " active" : "");
+      button.textContent = item.title || "New conversation";
+      button.title = button.textContent;
+      button.onclick = () => openConversation(item.id);
+      list.appendChild(button);
+    });
+  } catch (error) {
+    $("recentChats").textContent = "Couldn't load chats.";
+  }
+}
+
+async function openConversation(id) {
+  try {
+    const data = await api("/history?conversationId=" + encodeURIComponent(id));
+    const history = Array.isArray(data) ? data :
+      (data.messages || data.history || []);
+
+    conversationId = id;
+    messages = [];
+    $("messages").replaceChildren();
+    hideWelcome();
+
+    history.forEach(item => {
+      const role = item.role === "user" ? "user" : "assistant";
+      const content = item.content || item.message || "";
+      messages.push({role,content});
+      addMessage(role, content);
+    });
+
+    await loadConversations();
+    closeSidebarOnMobile();
+  } catch (error) {
+    toast("Couldn't open that conversation: " + error.message);
+  }
+}
+
+async function loadUsage() {
+  if (!clerk || !clerk.user) {
+    $("usageText").textContent = "Sign in";
+    $("usageBar").style.width = "0%";
+    return;
+  }
+
+  try {
+    const data = await api("/usage");
+    const used = Number(data.used ?? data.messageCount ?? 0);
+    const limit = Number(data.limit ?? 30);
+    const remaining = Number(data.remaining ?? Math.max(0, limit - used));
+
+    $("usageText").textContent = used + " / " + limit;
+    $("usageBar").style.width =
+      Math.min(100, limit > 0 ? (used / limit) * 100 : 0) + "%";
+    $("usageBar").title = remaining + " messages remaining";
+  } catch {
+    $("usageText").textContent = "Unavailable";
+  }
+}
+
+function toggleSidebar() {
+  $("sidebar").classList.toggle("open");
+}
+function closeSidebarOnMobile() {
+  if (window.innerWidth <= 720) $("sidebar").classList.remove("open");
+}
+
+function toggleAttachMenu() {
+  const menu = $("attachMenu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+function chooseFile() {
+  $("attachMenu").style.display = "none";
+  $("fileInput").click();
+}
+
+function handleAttachment(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  const allowed = [
+    "image/jpeg","image/png","image/webp",
+    "application/pdf","text/plain"
+  ];
+
+  if (!allowed.includes(file.type)) {
+    toast("Please choose a JPG, PNG, WEBP, PDF, or TXT file.");
+    event.target.value = "";
+    return;
+  }
+
+  if (file.size > 7 * 1024 * 1024) {
+    toast("This file is too large. Maximum size is 7 MB.");
+    event.target.value = "";
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    const base64 = String(reader.result).split(",")[1];
+    selectedAttachment = {
+      name:file.name,
+      mimeType:file.type,
+      data:base64
+    };
+
+    $("attachmentPreview").textContent = "📎 " + file.name + " — ready to send";
+    $("attachmentPreview").style.display = "block";
+    toast("Attachment added.");
+  };
+  reader.onerror = () => toast("Couldn't read that file.");
+  reader.readAsDataURL(file);
+  event.target.value = "";
+}
+
+function listen() {
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognition) {
+    toast("Voice input is not supported in this browser.");
+    return;
+  }
+
+  if (recognition) {
+    try { recognition.stop(); } catch {}
+  }
+
+  recognition = new SpeechRecognition();
+  recognition.lang = "en-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = event => {
+    const spoken = event.results[0][0].transcript;
+    $("message").value += ($("message").value ? " " : "") + spoken;
+    resizeInput();
+  };
+  recognition.onerror = () => toast("Voice input couldn't start. Please try again.");
+  recognition.start();
+  toast("Listening...");
+}
+
+function speakText(text) {
   if (!("speechSynthesis" in window)) {
-    alert("Your browser does not support voice playback.");
+    toast("Read aloud is not supported on this device.");
     return;
   }
 
   window.speechSynthesis.cancel();
-
-  document.querySelectorAll(".toby-audio-player").forEach(player => {
-    player.remove();
-  });
-
-  const player = document.createElement("div");
-  player.className = "toby-audio-player";
-
-  const playBtn = document.createElement("button");
-  playBtn.className = "audio-play-btn";
-  playBtn.textContent = "Ⅱ";
-  playBtn.type = "button";
-
-  const time = document.createElement("span");
-  time.className = "audio-time";
-  time.textContent = "00:00";
-
-  const wave = document.createElement("div");
-  wave.className = "audio-wave";
-
-  for (let i = 0; i < 28; i++) {
-    const bar = document.createElement("span");
-    bar.style.height = (5 + Math.random() * 25) + "px";
-    wave.appendChild(bar);
-  }
-
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "audio-close-btn";
-  closeBtn.textContent = "×";
-  closeBtn.type = "button";
-
-  player.append(playBtn, time, wave, closeBtn);
-  messageDiv.appendChild(player);
-
-  tobySpeech = new SpeechSynthesisUtterance(text);
-  tobySpeech.lang = "en-US";
-  tobySpeech.rate = 0.95;
-  tobySpeech.pitch = 1;
-
-  tobySpeaking = true;
-  tobyPaused = false;
-  tobyStartTime = Date.now();
-
-  function updateTime() {
-    if (!tobySpeaking || tobyPaused) return;
-
-    const seconds = Math.floor((Date.now() - tobyStartTime) / 1000);
-    time.textContent =
-      String(Math.floor(seconds / 60)).padStart(2, "0") +
-      ":" +
-      String(seconds % 60).padStart(2, "0");
-  }
-
-  const timer = setInterval(updateTime, 500);
-
-  function finishSpeech() {
-    clearInterval(timer);
-    tobySpeaking = false;
-    tobyPaused = false;
-    playBtn.textContent = "▶";
-    wave.classList.remove("playing");
-    time.textContent = "Done";
-    readBtn.textContent = "🔊 Read again";
-  }
-
-  tobySpeech.onend = finishSpeech;
-  tobySpeech.onerror = finishSpeech;
-
-  playBtn.onclick = () => {
-    if (tobyPaused) {
-      window.speechSynthesis.resume();
-      tobyPaused = false;
-      tobySpeaking = true;
-      tobyStartTime = Date.now();
-      playBtn.textContent = "Ⅱ";
-      wave.classList.add("playing");
-    } else if (tobySpeaking) {
-      window.speechSynthesis.pause();
-      tobyPaused = true;
-      tobySpeaking = false;
-      playBtn.textContent = "▶";
-      wave.classList.remove("playing");
-    } else {
-      readAloud(text, messageDiv, readBtn);
-    }
-  };
-
-  closeBtn.onclick = () => {
-    window.speechSynthesis.cancel();
-    clearInterval(timer);
-    tobySpeaking = false;
-    tobyPaused = false;
-    player.remove();
-    readBtn.textContent = "🔊 Read aloud";
-  };
-
-  readBtn.textContent = "🔊 Playing...";
-  wave.classList.add("playing");
-
-  window.speechSynthesis.speak(tobySpeech);
+  const utterance = new SpeechSynthesisUtterance(String(text));
+  utterance.lang = "en-US";
+  utterance.rate = 1;
+  window.speechSynthesis.speak(utterance);
 }
 
-// =====================================
-// TOBY AI CHAT SYSTEM
-// =====================================
-function readAttachment(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
+function generateImage() {
+  $("attachMenu").style.display = "none";
 
-    reader.onload = () => {
-      resolve({
-        name: file.name,
-        mimeType: file.type,
-        data: reader.result.split(",")[1]
-      });
-    };
-
-    reader.onerror = () => {
-      reject(new Error("Could not read the selected file."));
-    };
-
-    reader.readAsDataURL(file);
-  });
-}
-async function sendMessage() {
-  const text = input.value.trim();
-  const file = selectedAttachment;
-
-  if ((!text && !file) || sendBtn.disabled) return;
-
-  if (!clerkReady || !window.Clerk || !window.Clerk.isSignedIn) {
-    addMessage("Please log in before chatting.", "bot");
+  if (!clerk || !clerk.user) {
+    toast("Please sign in first.");
+    openAccount();
     return;
   }
 
-  sendBtn.disabled = true;
+  $("imageModal").style.display = "flex";
+  $("imagePrompt").focus();
+}
+
+function closeImageModal() {
+  $("imageModal").style.display = "none";
+}
+
+async function submitImageGeneration() {
+  const prompt = $("imagePrompt").value.trim();
+  if (!prompt) {
+    toast("Please describe the image first.");
+    return;
+  }
+
+  closeImageModal();
+  addMessage("user", "Generate an image: " + prompt);
+  showTyping();
 
   try {
-    const token = await window.Clerk.session.getToken();
-
-    if (!token) {
-      throw new Error("Please log in again.");
-    }
-
-    let attachment = null;
-
-    if (file) {
-      attachment = await readAttachment(file);
-    }
-
-    const userContent = text || `[Attached: ${file.name}]`;
-
-    input.value = "";
-
-    addMessage(userContent, "user");
-
-    messages.push({
-      role: "user",
-      content: userContent
+    const data = await api("/generate-image", {
+      method:"POST",
+      body:JSON.stringify({prompt})
     });
 
-    const response = await fetch("/chat", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({
-        messages,
-        conversationId: currentConversationId,
-        attachment
-      })
-    });
+    removeTyping();
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Request failed.");
+    const raw = data.image || data.imageBase64 || data.imageData || data.data;
+    if (!raw) {
+      throw new Error("The server did not return image data.");
     }
 
-    const reply = data.reply || "I couldn't create a reply.";
+    const imageUrl = String(raw).startsWith("data:")
+      ? raw
+      : "data:image/png;base64," + raw;
 
-    if (data.conversationId) {
-      currentConversationId = data.conversationId;
-    }
-
-    selectedAttachment = null;
-const preview = document.getElementById("attachmentPreview");
-
-if (preview) {
-  preview.innerHTML = "";
-  preview.style.display = "none";
-    }
-    document.getElementById("filePicker").value = "";
-    document.getElementById("cameraPicker").value = "";
-    document.getElementById("galleryPicker").value = "";
-
-    loadConversations();
-    loadUsage();
-
-    messages.push({
-      role: "assistant",
-      content: reply
-    });
-
-    addMessage(reply, "bot");
-    
-
+    addMessage("assistant", "Your generated image is ready.", {imageUrl});
   } catch (error) {
-    console.error("Toby AI error:", error);
-    addMessage("Toby AI error: " + error.message, "bot");
-
-  } finally {
-    sendBtn.disabled = false;
+    removeTyping();
+    addMessage("assistant", "Image generation wasn't successful: " + error.message);
   }
 }
 
+function openAccount() {
+  $("accountModal").style.display = "flex";
+}
+function closeAccount() {
+  $("accountModal").style.display = "none";
+}
 
-// =====================================
-// ENTER KEY
-// =====================================
+async function signIn() {
+  if (!clerk) {
+    toast("Account service is still loading. Please try again.");
+    return;
+  }
+  try {
+    await clerk.openSignIn();
+  } catch (error) {
+    toast("Couldn't open sign in. " + error.message);
+  }
+}
 
-input.addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    sendMessage();
+async function signUp() {
+  if (!clerk) {
+    toast("Account service is still loading. Please try again.");
+    return;
+  }
+  try {
+    await clerk.openSignUp();
+  } catch (error) {
+    toast("Couldn't open sign up. " + error.message);
+  }
+}
+
+async function logOut() {
+  if (!clerk) return;
+  try {
+    await clerk.signOut();
+    closeAccount();
+    await refreshAccount();
+    newChat();
+    toast("You have signed out.");
+  } catch (error) {
+    toast("Couldn't sign out. " + error.message);
+  }
+}
+
+async function refreshAccount() {
+  if (clerk && clerk.user) {
+    const user = clerk.user;
+    const email = user.primaryEmailAddress?.emailAddress || "Signed in";
+    const name = user.fullName || user.firstName || "Toby AI user";
+
+    $("accountName").textContent = name;
+    $("accountEmail").textContent = email;
+    $("accountAvatar").textContent = (name[0] || "T").toUpperCase();
+    $("accountStatus").textContent = "You are signed in as " + email + ".";
+    $("accountActions").innerHTML =
+      '<button class="primary" onclick="logOut()">Sign out</button>';
+
+    await Promise.allSettled([loadUsage(), loadConversations()]);
+  } else {
+    $("accountName").textContent = "My account";
+    $("accountEmail").textContent = "Sign in to Toby AI";
+    $("accountAvatar").textContent = "T";
+    $("accountStatus").textContent =
+      "Sign in to save your conversations and access your account.";
+    $("accountActions").innerHTML =
+      '<button class="primary" onclick="signIn()">Sign in</button>' +
+      '<button class="secondary" onclick="signUp()">Create account</button>';
+
+    $("recentChats").textContent = "Sign in to see your chats.";
+    $("usageText").textContent = "Sign in";
+    $("usageBar").style.width = "0%";
+  }
+}
+
+async function startClerk() {
+  if (!CLERK_PUBLISHABLE_KEY || !CLERK_PUBLISHABLE_KEY.startsWith("pk_")) {
+    throw new Error("The Clerk publishable key is missing or invalid.");
+  }
+
+  await new Promise((resolve, reject) => {
+    if (window.Clerk) return resolve();
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = "https://advanced-filly-9718.clerk.accounts.dev/npm/@clerk/clerk-js@latest/dist/clerk.browser.js";
+    script.crossOrigin = "anonymous";
+    script.onload = resolve;
+    script.onerror = () => reject(new Error("Couldn't load the account service."));
+    document.head.appendChild(script);
+  });
+
+  clerk = new window.Clerk(CLERK_PUBLISHABLE_KEY);
+  await clerk.load();
+
+  clerk.addListener(() => {
+    refreshAccount();
+  });
+
+  await refreshAccount();
+}
+
+window.addEventListener("load", async () => {
+  try {
+    await startClerk();
+  } catch (error) {
+    $("accountEmail").textContent = "Account service unavailable";
+    $("recentChats").textContent = "Sign-in service couldn't load.";
+    toast(error.message);
   }
 });
-
-// =====================================
-// VOICE INPUT
-// =====================================
-
-function listen() {
-  const SpeechRecognition =
-    window.SpeechRecognition ||
-    window.webkitSpeechRecognition;
-
-  if (!SpeechRecognition) {
-    addMessage(
-      "Voice input isn't supported here. Try your keyboard microphone.",
-      "bot"
-    );
-    return;
-  }
-
-  const recognition = new SpeechRecognition();
-
-  recognition.lang = "en-US";
-  recognition.interimResults = false;
-
-  recognition.onresult = event => {
-    input.value = event.results[0][0].transcript;
-    sendMessage();
-  };
-
-  recognition.onerror = () => {
-    addMessage(
-      "Microphone error. Please try again.",
-      "bot"
-    );
-  };
-
-  recognition.start();
-}
-
-// =====================================
-// START TOBY AI
-// =====================================
-
-loadClerk();
-// =====================================
-// TOBY AI SIDEBAR
-// =====================================
-
-function toggleSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  const overlay = document.getElementById("sidebarOverlay");
-
-  sidebar.classList.toggle("open");
-  overlay.classList.toggle("show");
-}
-
-// =====================================
-// START A NEW CHAT
-// =====================================
-
-function newChat() {
-  messages.length = 0;
-currentConversationId = null;
-  chat.innerHTML = `
-    <div class="welcome-screen">
-      <div class="welcome-orb">🤖</div>
-      <h2>Hey, I'm Toby AI!</h2>
-      <p>Your smart AI assistant. Ready to help you explore, learn and create.</p>
-    </div>
-  `;
-
-  toggleSidebar();
-}
-function askSuggestion(question) {
-  const inputBox = document.getElementById("message");
-
-  if (!inputBox) return;
-
-  inputBox.value = question;
-  sendMessage();
-}
-// =====================================
-// TOBY AI CHAT HISTORY
-// =====================================
-
-async function loadConversations() {
-  const container = document.getElementById("recentChats");
-
-  container.innerHTML = "<p>Loading chats...</p>";
-
-  try {
-    const token = await window.Clerk.session.getToken();
-
-    const response = await fetch("/conversations", {
-      headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Could not load chats.");
-    }
-
-    container.innerHTML = "";
-
-    if (!data.conversations.length) {
-      container.innerHTML = "<p>No previous chats yet.</p>";
-      return;
-    }
-
-    data.conversations.forEach(item => {
-      const button = document.createElement("button");
-
-      button.textContent = "💬 " + item.title;
-      button.style.width = "100%";
-      button.style.margin = "5px 0";
-
-      button.onclick = () => openConversation(item.id);
-
-      container.appendChild(button);
-    });
-
-  } catch (error) {
-    container.textContent = error.message;
-  }
-}
-
-// =====================================
-// OPEN PREVIOUS CHAT
-// =====================================
-
-async function openConversation(id) {
-  try {
-    const token = await window.Clerk.session.getToken();
-
-    const response = await fetch(
-      `/history?conversationId=${encodeURIComponent(id)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || "Could not open chat.");
-    }
-
-    currentConversationId = id;
-
-    messages.length = 0;
-    chat.innerHTML = "";
-
-    data.messages.forEach(item => {
-      messages.push({
-        role: item.role,
-        content: item.content
-      });
-
-      addMessage(
-        item.content,
-        item.role === "user" ? "user" : "bot"
-      );
-    });
-
-    toggleSidebar();
-
-  } catch (error) {
-    alert(error.message);
-   }
-}
-function toggleAttachMenu() {
-  const menu = document.getElementById("attachOptions");
-
-  if (menu.style.display === "none") {
-    menu.style.display = "block";
-  } else {
-    menu.style.display = "none";
-  }
-}
- async function pasteContent() {
-  try {
-    const text = await navigator.clipboard.readText();
-
-    if (!text) {
-      alert("Your clipboard is empty.");
-      return;
-    }
-
-    document.getElementById("message").value = text;
-    document.getElementById("message").focus();
-    document.getElementById("attachOptions").style.display = "none";
-
-  } catch (error) {
-    alert("Clipboard access failed. You can long-press the typing box and tap Paste.");
-  }
-}
-let selectedAttachment = null;
-
-
-function handleAttachment(inputElement) {
-  const file = inputElement.files[0];
-
-  if (!file) return;
-
-  const allowedTypes = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "application/pdf",
-    "text/plain"
-  ];
-
-  if (!allowedTypes.includes(file.type)) {
-    alert("Please choose an image, PDF, or text file.");
-    inputElement.value = "";
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    alert("Please choose a file smaller than 5 MB.");
-    inputElement.value = "";
-    return;
-  }
-
-  selectedAttachment = file;
-
-  const preview = document.getElementById("attachmentPreview");
-
-  if (!preview) {
-    alert("Attachment preview area is missing.");
-    inputElement.value = "";
-    return;
-  }
-
-  preview.innerHTML = "";
-
-  if (file.type.startsWith("image/")) {
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    img.style.maxWidth = "150px";
-    img.style.maxHeight = "150px";
-    img.style.borderRadius = "12px";
-    img.style.objectFit = "cover";
-
-    preview.appendChild(img);
-  }
-
-  const name = document.createElement("p");
-  name.textContent = "Selected: " + file.name;
-  preview.appendChild(name);
-
-  preview.style.display = "block";
-
-  document.getElementById("attachOptions").style.display = "none";
-}
-function openAccount() {
-  const account = document.getElementById("account");
-
-  account.style.display = "block";
-  account.style.position = "fixed";
-  account.style.top = "50%";
-  account.style.left = "50%";
-  account.style.transform = "translate(-50%, -50%)";
-  account.style.width = "90%";
-  account.style.maxWidth = "420px";
-  account.style.maxHeight = "85vh";
-  account.style.overflowY = "auto";
-  account.style.zIndex = "2000";
-
-  if (!document.getElementById("closeAccountBtn")) {
-    const close = document.createElement("button");
-    close.id = "closeAccountBtn";
-    close.textContent = "Close";
-    close.onclick = () => {
-      account.style.display = "none";
-    };
-    account.appendChild(close);
-  }
-
-  toggleSidebar();
-}
-
-async function showUsage() {
-  toggleSidebar();
-
-  const panel = document.getElementById("usagePanel");
-
-  await loadUsage();
-
-  if (panel.style.display === "none") {
-    alert("Please sign in to view your usage.");
-    return;
-  }
-
-  panel.style.display = "block";
-  panel.style.position = "fixed";
-  panel.style.top = "50%";
-  panel.style.left = "50%";
-  panel.style.transform = "translate(-50%, -50%)";
-  panel.style.width = "90%";
-  panel.style.zIndex = "2000";
-
-  if (!document.getElementById("closeUsageBtn")) {
-    const close = document.createElement("button");
-    close.id = "closeUsageBtn";
-    close.textContent = "Close";
-    close.onclick = () => {
-      panel.style.display = "none";
-    };
-    panel.appendChild(close);
-  }
-}
 </script>
-
 </body>
 </html>
