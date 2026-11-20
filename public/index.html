@@ -1082,5 +1082,130 @@ window.addEventListener("load", async () => {
   }
 });
 </script>
+
+<!-- TOBY AI VIDEO GENERATOR -->
+
+<style>
+#tobyVideoModal .modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+#tobyVideoModal textarea,
+#tobyVideoModal select {
+  width: 100%;
+  padding: 13px;
+  margin: 8px 0;
+  border-radius: 10px;
+  background: #080e20;
+  border: 1px solid rgba(145,165,255,.2);
+  color: white;
+}
+#tobyVideoModal label {
+  display: block;
+  margin-top: 15px;
+  color: #cbd4ee;
+  font-size: 13px;
+}
+#tobyVideoStatus {
+  color: #42d9ff;
+  font-size: 12px;
+  margin-top: 15px;
+}
+</style>
+
+<div class="overlay" id="tobyVideoModal">
+  <div class="modal">
+    <h2>🎬 Toby AI Video Generator</h2>
+    <p>Create a video from your imagination.</p>
+
+    <label for="tobyVideoPrompt">Describe your video</label>
+    <textarea id="tobyVideoPrompt" rows="4"
+      placeholder="Example: A futuristic city at sunset with flying cars..."></textarea>
+
+    <label for="tobyVideoStyle">Choose video style</label>
+    <select id="tobyVideoStyle">
+      <option value="realistic">Realistic</option>
+      <option value="cinematic">Cinematic</option>
+      <option value="animation">Animation</option>
+      <option value="cartoon">Cartoon</option>
+    </select>
+
+    <label for="tobyVideoDuration">Video duration</label>
+    <select id="tobyVideoDuration">
+      <option value="5">5 seconds</option>
+      <option value="8">8 seconds</option>
+    </select>
+
+    <div class="modal-actions">
+      <button class="primary" onclick="submitTobyVideo()">
+        Generate Video
+      </button>
+      <button class="secondary" onclick="closeTobyVideo()">
+        Cancel
+      </button>
+    </div>
+
+    <div id="tobyVideoStatus">
+      Ready for video generation setup.
+    </div>
+
+    <div id="tobyVideoResult"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const attachMenu = document.getElementById("attachMenu");
+
+  if (attachMenu) {
+    const videoButton = document.createElement("button");
+    videoButton.textContent = "🎬 AI Video Generator";
+    videoButton.onclick = openTobyVideo;
+    attachMenu.appendChild(videoButton);
+  }
+
+  window.openTobyVideo = function () {
+    if (!clerk || !clerk.user) {
+      toast("Please sign in first.");
+      openAccount();
+      return;
+    }
+
+    document.getElementById("attachMenu").style.display = "none";
+    document.getElementById("tobyVideoModal").style.display = "flex";
+  };
+
+  window.closeTobyVideo = function () {
+    document.getElementById("tobyVideoModal").style.display = "none";
+  };
+
+  window.submitTobyVideo = function () {
+    const prompt =
+      document.getElementById("tobyVideoPrompt").value.trim();
+
+    const style =
+      document.getElementById("tobyVideoStyle").value;
+
+    const duration =
+      document.getElementById("tobyVideoDuration").value;
+
+    const status =
+      document.getElementById("tobyVideoStatus");
+
+    if (!prompt) {
+      toast("Please describe your video first.");
+      return;
+    }
+
+    status.textContent =
+      "The video generator interface is ready. Google Veo backend connection is still required.";
+
+    toast("Video generator is ready for backend setup.");
+  };
+})();
+</script>
+
+<!-- END TOBY AI VIDEO GENERATOR -->
+    
 </body>
 </html>
