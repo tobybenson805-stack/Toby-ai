@@ -183,6 +183,13 @@ button {
     <div class="number" id="active">--</div>
   </div>
 
+<div class="chart-card">
+  <h2>Daily Sign-ups (Last 7 Days)</h2>
+  <div class="chart" id="signupChart">
+    Loading sign-ups...
+  </div>
+</div>
+
 </div>
 
 <div class="chart-card">
@@ -207,19 +214,23 @@ async function loadAnalytics() {
   status.className = "status";
 
   try {
-    const [statsResponse, dailyResponse] =
-      await Promise.all([
-        fetch("/admin/analytics", {
-          credentials: "same-origin"
-        }),
-        fetch("/admin/analytics/daily", {
-          credentials: "same-origin"
-        })
-      ]);
-
+    const [statsResponse, dailyResponse, signupResponse] =
+  await Promise.all([
+    fetch("/admin/analytics", {
+      credentials: "same-origin"
+    }),
+    fetch("/admin/analytics/daily", {
+      credentials: "same-origin"
+    }),
+    fetch("/admin/registrations", {
+      credentials: "same-origin"
+    })
+  ]);
     if (
       statsResponse.status === 401 ||
       dailyResponse.status === 401
+      signupResponse.status === 401 ||
+      signupResponse.status === 403 || 
     ) {
       status.textContent =
         "Please log in to Toby AI first, then reopen this page.";
@@ -241,12 +252,17 @@ async function loadAnalytics() {
       throw new Error("Could not load analytics.");
     }
 
-    const stats = await statsResponse.json();
-    const daily = await dailyResponse.json();
-
+    if (
+  !statsResponse.ok ||
+  !dailyResponse.ok ||
+  !signupResponse.ok
+) {
     document.getElementById("users").textContent =
       stats.totalUsers;
+const registrationData = await signupResponse.json();
 
+document.getElementById("registeredUsers").textContent =
+  registrationData.totalRegisteredUsers;
     document.getElementById("messages").textContent =
       stats.totalMessages;
 
@@ -287,7 +303,38 @@ async function loadAnalytics() {
       item.append(value, bar, date);
       chart.appendChild(item);
     });
+const signupChart = document.getElementById("signupChart");
+const signupDays = registrationData.dailyRegistrations || [];
 
+const signupMaximum = Math.max(
+  1,
+  ...signupDays.map(day => Number(day.signups))
+);
+
+signupChart.innerHTML = "";
+
+signupDays.forEach(day => {
+  const count = Number(day.signups) || 0;
+
+  const item = document.createElement("div");
+  item.className = "bar-item";
+
+  const value = document.createElement("div");
+  value.className = "bar-value";
+  value.textContent = count;
+
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  bar.style.height =
+    Math.max(2, (count / signupMaximum) * 125) + "px";
+
+  const date = document.createElement("div");
+  date.className = "bar-date";
+  date.textContent = day.date;
+
+  item.append(value, bar, date);
+  signupChart.appendChild(item);
+});
     status.textContent =
       "Last updated: " + new Date().toLocaleTimeString();
 
