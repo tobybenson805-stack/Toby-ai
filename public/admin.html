@@ -206,63 +206,67 @@ button {
 </div>
 
 <script>
+
 async function loadAnalytics() {
   const status = document.getElementById("status");
   const chart = document.getElementById("chart");
+  const signupChart = document.getElementById("signupChart");
 
   status.textContent = "Loading analytics...";
   status.className = "status";
 
   try {
     const [statsResponse, dailyResponse, signupResponse] =
-  await Promise.all([
-    fetch("/admin/analytics", {
-      credentials: "same-origin"
-    }),
-    fetch("/admin/analytics/daily", {
-      credentials: "same-origin"
-    }),
-    fetch("/admin/registrations", {
-      credentials: "same-origin"
-    })
-  ]);
+      await Promise.all([
+        fetch("/admin/analytics", {
+          credentials: "same-origin"
+        }),
+        fetch("/admin/analytics/daily", {
+          credentials: "same-origin"
+        }),
+        fetch("/admin/registrations", {
+          credentials: "same-origin"
+        })
+      ]);
+
     if (
       statsResponse.status === 401 ||
-      dailyResponse.status === 401
-      signupResponse.status === 401 ||
-      signupResponse.status === 403 || 
+      dailyResponse.status === 401 ||
+      signupResponse.status === 401
     ) {
-      status.textContent =
-        "Please log in to Toby AI first, then reopen this page.";
+      status.textContent = "Please log in to Toby AI first.";
       status.className = "status error";
       return;
     }
 
     if (
       statsResponse.status === 403 ||
-      dailyResponse.status === 403
+      dailyResponse.status === 403 ||
+      signupResponse.status === 403
     ) {
-      status.textContent =
-        "Admin access only. This account is not authorized.";
+      status.textContent = "Admin access only.";
       status.className = "status error";
       return;
     }
 
-    if (!statsResponse.ok || !dailyResponse.ok) {
+    if (
+      !statsResponse.ok ||
+      !dailyResponse.ok ||
+      !signupResponse.ok
+    ) {
       throw new Error("Could not load analytics.");
     }
 
-    if (
-  !statsResponse.ok ||
-  !dailyResponse.ok ||
-  !signupResponse.ok
-) {
+    const stats = await statsResponse.json();
+    const daily = await dailyResponse.json();
+    const registrationData = await signupResponse.json();
+
     document.getElementById("users").textContent =
       stats.totalUsers;
-const registrationData = await signupResponse.json();
 
-document.getElementById("registeredUsers").textContent =
-  registrationData.totalRegisteredUsers;
+    document.getElementById("registeredUsers").textContent =
+      registrationData.totalRegisteredUsers;
+
     document.getElementById("messages").textContent =
       stats.totalMessages;
 
@@ -272,6 +276,7 @@ document.getElementById("registeredUsers").textContent =
     document.getElementById("active").textContent =
       stats.activeToday;
 
+    // DAILY MESSAGE CHART
     const days = daily.dailyActivity || [];
 
     const maximum = Math.max(
@@ -303,43 +308,45 @@ document.getElementById("registeredUsers").textContent =
       item.append(value, bar, date);
       chart.appendChild(item);
     });
-const signupChart = document.getElementById("signupChart");
-const signupDays = registrationData.dailyRegistrations || [];
 
-const signupMaximum = Math.max(
-  1,
-  ...signupDays.map(day => Number(day.signups))
-);
+    // DAILY SIGN-UP CHART
+    const signupDays = registrationData.dailyRegistrations || [];
 
-signupChart.innerHTML = "";
+    const signupMaximum = Math.max(
+      1,
+      ...signupDays.map(day => Number(day.signups))
+    );
 
-signupDays.forEach(day => {
-  const count = Number(day.signups) || 0;
+    signupChart.innerHTML = "";
 
-  const item = document.createElement("div");
-  item.className = "bar-item";
+    signupDays.forEach(day => {
+      const count = Number(day.signups) || 0;
 
-  const value = document.createElement("div");
-  value.className = "bar-value";
-  value.textContent = count;
+      const item = document.createElement("div");
+      item.className = "bar-item";
 
-  const bar = document.createElement("div");
-  bar.className = "bar";
-  bar.style.height =
-    Math.max(2, (count / signupMaximum) * 125) + "px";
+      const value = document.createElement("div");
+      value.className = "bar-value";
+      value.textContent = count;
 
-  const date = document.createElement("div");
-  date.className = "bar-date";
-  date.textContent = day.date;
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.height =
+        Math.max(2, (count / signupMaximum) * 125) + "px";
 
-  item.append(value, bar, date);
-  signupChart.appendChild(item);
-});
+      const date = document.createElement("div");
+      date.className = "bar-date";
+      date.textContent = day.date.slice(5);
+
+      item.append(value, bar, date);
+      signupChart.appendChild(item);
+    });
+
     status.textContent =
       "Last updated: " + new Date().toLocaleTimeString();
 
   } catch (error) {
-    console.error(error);
+    console.error("Dashboard error:", error);
 
     status.textContent =
       "Could not load analytics. Please refresh and try again.";
@@ -349,7 +356,8 @@ signupDays.forEach(day => {
 }
 
 loadAnalytics();
-</script>
 
+<script>
+      
 </body>
 </html>
