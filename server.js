@@ -5,7 +5,11 @@ const express = require("express");
 const path = require("path");
 const { Pool } = require("pg");
 const { GoogleGenAI } = require("@google/genai");
-const { clerkMiddleware, getAuth } = require("@clerk/express");
+const {
+  clerkMiddleware,
+  getAuth,
+  clerkClient
+} = require("@clerk/express");
 
 const app = express();
 
@@ -223,6 +227,67 @@ app.get("/admin/analytics", async (req, res) => {
 
     res.status(500).json({
       error: "Could not load analytics."
+    });
+  }
+});
+
+app.get("/admin/registrations", async (req, res) => {
+  try {
+    const userId = requireLogin(req, res);
+    if (!userId) return;
+
+    if (
+      !process.env.ADMIN_USER_ID ||
+      userId !== process.env.ADMIN_USER_ID
+    ) {
+      return res.status(403).json({
+        error: "Admin access only."
+      });
+    }
+
+    // Get the exact total number of registered users.
+    const allUsers = await clerkClient.users.getUserList({
+      limit: 1
+    });
+
+    // Calculate registration counts for the last 7 days.
+    const today = new Date();
+    const todayStart = Date.UTC(
+      today.getUTCFullYear(),
+      today.getUTCMonth(),
+      today.getUTCDate()
+    );
+
+    const dailyRegistrations = await Promise.all(
+      Array.from({ length: 7 }, async (_, index) => {
+        const start = todayStart -
+          (6 - index) * 24 * 60 * 60 * 1000;
+
+        const end = start + 24 * 60 * 60 * 1000;
+
+        const result = await clerkClient.users.getUserList({
+          createdAtAfter: start,
+          createdAtBefore: end,
+          limit: 1
+        });
+
+        return {
+          date: new Date(start).toISOString().slice(0, 10),
+          signups: result.totalCount
+        };
+      })
+    );
+
+    res.json({
+      totalRegisteredUsers: allUsers.totalCount,
+      dailyRegistrations
+    });
+
+  } catch (error) {
+    console.error("Registration analytics error:", error);
+
+    res.status(500).json({
+      error: "Could not load registration analytics."
     });
   }
 });
