@@ -375,7 +375,7 @@ button{cursor:pointer}
       <button onclick="generateImage()">🎨 Generate an image</button>
     </div>
     <input class="hidden-input" type="file" id="fileInput" accept="image/png,image/jpeg,image/webp,application/pdf,text/plain" onchange="handleAttachment(event)">
-  <input
+    <input
   class="hidden-input"
   type="file"
   id="cameraInput"
@@ -383,8 +383,9 @@ button{cursor:pointer}
   capture="environment"
   onchange="handleAttachment(event)"
 >
+      </div>
+    </div>
 </main>
-</div>
 
 <div class="overlay" id="accountModal" onclick="if(event.target===this)closeAccount()">
   <div class="modal">
@@ -417,9 +418,6 @@ button{cursor:pointer}
 "use strict";
 
 let allConversations = [];
-
-/* Toby AI frontend configuration */
-const CLERK_PUBLISHABLE_KEY =
 
 /* Toby AI frontend configuration */
 const CLERK_PUBLISHABLE_KEY =
