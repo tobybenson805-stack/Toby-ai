@@ -172,6 +172,62 @@ function requireLogin(req, res) {
 }
 
 // =====================================
+// ADMIN ANALYTICS
+// =====================================
+
+app.get("/admin/analytics", async (req, res) => {
+  try {
+    const userId = requireLogin(req, res);
+    if (!userId) return;
+
+    if (!process.env.ADMIN_USER_ID ||
+        userId !== process.env.ADMIN_USER_ID) {
+      return res.status(403).json({
+        error: "Admin access only."
+      });
+    }
+
+    const [users, messages, conversations, activeToday] =
+      await Promise.all([
+        db.query(`
+          SELECT COUNT(DISTINCT clerk_user_id)::int AS total
+          FROM chat_messages
+        `),
+
+        db.query(`
+          SELECT COUNT(*)::int AS total
+          FROM chat_messages
+        `),
+
+        db.query(`
+          SELECT COUNT(*)::int AS total
+          FROM conversations
+        `),
+
+        db.query(`
+          SELECT COUNT(DISTINCT clerk_user_id)::int AS total
+          FROM chat_messages
+          WHERE created_at >= CURRENT_DATE
+        `)
+      ]);
+
+    res.json({
+      totalUsers: users.rows[0].total,
+      totalMessages: messages.rows[0].total,
+      totalConversations: conversations.rows[0].total,
+      activeToday: activeToday.rows[0].total
+    });
+
+  } catch (error) {
+    console.error("Admin analytics error:", error);
+
+    res.status(500).json({
+      error: "Could not load analytics."
+    });
+  }
+});
+
+// =====================================
 // DAILY USAGE
 // =====================================
 
