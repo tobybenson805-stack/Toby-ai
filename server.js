@@ -227,6 +227,49 @@ app.get("/admin/analytics", async (req, res) => {
   }
 });
 
+app.get("/admin/analytics/daily", async (req, res) => {
+  try {
+    const userId = requireLogin(req, res);
+    if (!userId) return;
+
+    if (
+      !process.env.ADMIN_USER_ID ||
+      userId !== process.env.ADMIN_USER_ID
+    ) {
+      return res.status(403).json({
+        error: "Admin access only."
+      });
+    }
+
+    const result = await db.query(`
+      SELECT
+        TO_CHAR(day::date, 'Mon DD') AS date,
+        COUNT(chat_messages.id)::int AS messages
+      FROM generate_series(
+        CURRENT_DATE - INTERVAL '6 days',
+        CURRENT_DATE,
+        INTERVAL '1 day'
+      ) AS day
+      LEFT JOIN chat_messages
+        ON chat_messages.created_at >= day
+        AND chat_messages.created_at < day + INTERVAL '1 day'
+      GROUP BY day
+      ORDER BY day ASC
+    `);
+
+    res.json({
+      dailyActivity: result.rows
+    });
+
+  } catch (error) {
+    console.error("Daily analytics error:", error);
+
+    res.status(500).json({
+      error: "Could not load daily activity."
+    });
+  }
+});
+
 // =====================================
 // DAILY USAGE
 // =====================================
