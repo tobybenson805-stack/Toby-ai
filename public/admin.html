@@ -1,0 +1,308 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080b18">
+<title>Toby AI Admin Dashboard</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  background: #080b18;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 950px;
+  margin: auto;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 25px;
+}
+
+.subtitle {
+  color: #9299ad;
+  margin-top: 8px;
+}
+
+button {
+  background: #6655f5;
+  color: white;
+  border: 0;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+}
+
+.card, .chart-card {
+  background: #141a2b;
+  border: 1px solid #252d43;
+  border-radius: 15px;
+  padding: 20px;
+}
+
+.card p {
+  color: #a0a8bd;
+  margin: 0 0 15px;
+}
+
+.number {
+  font-size: 32px;
+  font-weight: bold;
+}
+
+.chart-card {
+  margin-top: 20px;
+}
+
+.chart-card h2 {
+  font-size: 18px;
+  margin-top: 0;
+}
+
+.chart {
+  height: 190px;
+  display: flex;
+  align-items: end;
+  justify-content: space-around;
+  gap: 9px;
+  padding-top: 15px;
+  border-bottom: 1px solid #39415a;
+}
+
+.bar-item {
+  flex: 1;
+  text-align: center;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: end;
+  align-items: center;
+  gap: 7px;
+}
+
+.bar {
+  width: 100%;
+  max-width: 42px;
+  min-height: 3px;
+  background: linear-gradient(#8878ff, #5545db);
+  border-radius: 7px 7px 0 0;
+}
+
+.bar-value, .bar-date {
+  font-size: 11px;
+  color: #aeb5c8;
+}
+
+.status {
+  margin-top: 20px;
+  color: #aeb5c8;
+  font-size: 13px;
+}
+
+.error {
+  color: #ff7777;
+}
+
+@media (max-width: 400px) {
+  body {
+    padding: 13px;
+  }
+
+  .card {
+    padding: 15px;
+  }
+
+  .number {
+    font-size: 27px;
+  }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+  <div>
+    <h1>🚀 Toby AI Admin</h1>
+    <div class="subtitle">Your app statistics</div>
+  </div>
+
+  <button onclick="loadAnalytics()">
+    ↻ Refresh
+  </button>
+</header>
+
+<div class="cards">
+
+  <div class="card">
+    <p>Total Users</p>
+    <div class="number" id="users">--</div>
+  </div>
+
+  <div class="card">
+    <p>Total Messages</p>
+    <div class="number" id="messages">--</div>
+  </div>
+
+  <div class="card">
+    <p>Total Conversations</p>
+    <div class="number" id="conversations">--</div>
+  </div>
+
+  <div class="card">
+    <p>Active Today</p>
+    <div class="number" id="active">--</div>
+  </div>
+
+</div>
+
+<div class="chart-card">
+  <h2>Daily Messages (Last 7 Days)</h2>
+  <div class="chart" id="chart">
+    Loading chart...
+  </div>
+</div>
+
+<div class="status" id="status">
+  Loading Toby AI analytics...
+</div>
+
+</div>
+
+<script>
+async function loadAnalytics() {
+  const status = document.getElementById("status");
+  const chart = document.getElementById("chart");
+
+  status.textContent = "Loading analytics...";
+  status.className = "status";
+
+  try {
+    const [statsResponse, dailyResponse] =
+      await Promise.all([
+        fetch("/admin/analytics", {
+          credentials: "same-origin"
+        }),
+        fetch("/admin/analytics/daily", {
+          credentials: "same-origin"
+        })
+      ]);
+
+    if (
+      statsResponse.status === 401 ||
+      dailyResponse.status === 401
+    ) {
+      status.textContent =
+        "Please log in to Toby AI first, then reopen this page.";
+      status.className = "status error";
+      return;
+    }
+
+    if (
+      statsResponse.status === 403 ||
+      dailyResponse.status === 403
+    ) {
+      status.textContent =
+        "Admin access only. This account is not authorized.";
+      status.className = "status error";
+      return;
+    }
+
+    if (!statsResponse.ok || !dailyResponse.ok) {
+      throw new Error("Could not load analytics.");
+    }
+
+    const stats = await statsResponse.json();
+    const daily = await dailyResponse.json();
+
+    document.getElementById("users").textContent =
+      stats.totalUsers;
+
+    document.getElementById("messages").textContent =
+      stats.totalMessages;
+
+    document.getElementById("conversations").textContent =
+      stats.totalConversations;
+
+    document.getElementById("active").textContent =
+      stats.activeToday;
+
+    const days = daily.dailyActivity || [];
+
+    const maximum = Math.max(
+      1,
+      ...days.map(day => Number(day.messages))
+    );
+
+    chart.innerHTML = "";
+
+    days.forEach(day => {
+      const count = Number(day.messages) || 0;
+
+      const item = document.createElement("div");
+      item.className = "bar-item";
+
+      const value = document.createElement("div");
+      value.className = "bar-value";
+      value.textContent = count;
+
+      const bar = document.createElement("div");
+      bar.className = "bar";
+      bar.style.height =
+        Math.max(2, (count / maximum) * 125) + "px";
+
+      const date = document.createElement("div");
+      date.className = "bar-date";
+      date.textContent = day.date;
+
+      item.append(value, bar, date);
+      chart.appendChild(item);
+    });
+
+    status.textContent =
+      "Last updated: " + new Date().toLocaleTimeString();
+
+  } catch (error) {
+    console.error(error);
+
+    status.textContent =
+      "Could not load analytics. Please refresh and try again.";
+
+    status.className = "status error";
+  }
+}
+
+loadAnalytics();
+</script>
+
+</body>
+</html>
