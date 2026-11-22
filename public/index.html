@@ -647,27 +647,34 @@ async function sendMessage() {
   const attachmentToSend = selectedAttachment;
 
   try {
-    // Generate images directly inside the chat.
-    if (isImageRequest) {
-      const styleMatch = text.match(
-        /\b(anime|3d|cartoon|realistic|photorealistic)\b/i
-      );
+    
+// Detect a wide range of image-generation requests.
+const imageRequestPatterns = [
+  /^(please\s+)?(draw|paint|illustrate|sketch|render|visualize)\b/i,
+  /^(can|could|would)\s+you\s+(please\s+)?(draw|paint|illustrate|sketch|render)\b/i,
+  /^(please\s+)?(generate|create|make|design)\b.*\b(image|picture|photo|illustration|artwork|wallpaper|logo|poster|portrait|drawing|graphic|map|diagram|chart|graph)\b/i,
+  /^(please\s+)?(generate|create|make|design)\b.*\b(of|showing)\b/i,
+  /^(show|give)\s+me\s+(an?\s+)?(image|picture|photo|drawing|map|diagram)\b/i,
+  /\bI want (an?\s+)?(image|picture|drawing|map|diagram)\b/i,
+  /\bI want you to (draw|paint|illustrate|sketch|render)\b/i
+];
 
-      const style = styleMatch
-        ? styleMatch[0].toLowerCase()
-        : "realistic";
-
-      const styleInstructions = {
-        realistic: "Photorealistic style, natural lighting and lifelike details.",
-        photorealistic: "Highly photorealistic style with lifelike details.",
-        anime: "Japanese anime illustration style with expressive details.",
-        "3d": "High-quality 3D rendered style with dimensional lighting.",
-        cartoon: "Colorful cartoon illustration style with clean outlines."
-      };
+const isImageRequest =
+  !selectedAttachment &&
+  imageRequestPatterns.some(pattern => pattern.test(text));
+  }:
 
       const finalPrompt =
-        text + "\n\nImage style: " + styleInstructions[style];
-
+  "Create an image based on this exact user request: " + text +
+  "\n\nInstructions:" +
+  "\n- Understand the complete subject requested." +
+  "\n- Include all important objects and details." +
+  "\n- Make the image clear, detailed and visually appealing." +
+  "\n- For educational diagrams, use a clean educational illustration." +
+  "\n- For maps, aim to represent the requested real-world geography." +
+  "\n- Do not invent labels, names, or geographical facts." +
+  "\n- Do not add unrelated objects or text." +
+  "\n\nImage style: " + styleInstructions[style];
       addMessage("user", text);
       input.value = "";
       resizeInput();
