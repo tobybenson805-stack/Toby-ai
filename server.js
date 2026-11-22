@@ -771,6 +771,7 @@ const conversationText = messages
 // =====================================
 
 
+  
 app.post("/generate-image", async (req, res) => {
   try {
     const userId = requireLogin(req, res);
@@ -781,60 +782,81 @@ app.post("/generate-image", async (req, res) => {
     if (
       typeof prompt !== "string" ||
       !prompt.trim() ||
-      prompt.length > 1000
+      prompt.length > 2000
     ) {
       return res.status(400).json({
-        error: "Enter an image description of up to 1000 characters."
+        error: "Enter an image description of up to 2000 characters."
       });
     }
 
-    console.log("Starting Toby AI image generation...");
+    if (
+      !process.env.CLOUDFLARE_ACCOUNT_ID ||
+      !process.env.CLOUDFLARE_API_TOKEN
+    ) {
+      return res.status(500).json({
+        error: "Image generation is not configured."
+      });
+    }
 
-    const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash-image",
-      contents: prompt.trim(),
-      config: {
-        responseModalities: ["TEXT", "IMAGE"]
+    console.log("Starting Cloudflare image generation...");
+
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          prompt: prompt.trim(),
+          steps: 4
+        })
       }
-    });
-
-    const parts =
-      result.candidates?.[0]?.content?.parts || [];
-
-    const imagePart = parts.find(
-      part => part.inlineData?.data
     );
 
-    if (!imagePart) {
+    const result = await response.json();
+
+    if (!response.ok || !result.success) {
       console.error(
-        "No image returned. Gemini response:",
-        JSON.stringify(result).slice(0, 3000)
+        "Cloudflare image error:",
+        JSON.stringify(result).slice(0, 2000)
       );
 
       return res.status(502).json({
-        error: "Gemini did not return an image. Please try another prompt."
+        error: "Image generation failed. Please try again."
       });
     }
 
-    console.log("Toby AI image generated successfully.");
+    const imageData = result.result?.image;
+
+    if (!imageData) {
+      console.error("Cloudflare returned no image.");
+      return res.status(502).json({
+        error: "No image was returned."
+      });
+    }
+
+    console.log("Cloudflare image generated successfully.");
 
     return res.json({
-      image: imagePart.inlineData.data,
-      mimeType: imagePart.inlineData.mimeType || "image/png"
+      image: imageData,
+      mimeType: "image/jpeg"
     });
 
   } catch (error) {
-    console.error("IMAGE GENERATION ERROR:", {
-      status: error.status || error.code,
-      message: error.message,
-      details: error.error || error.details
-    });
+    console.error(
+      "Cloudflare image generation error:",
+      error.message || error
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "Image generation failed. Please try again."
     });
   }
 });
+
+
 
 
 // =====================================
