@@ -178,9 +178,24 @@ button{cursor:pointer}
 }
 .composer{max-width:850px;margin:auto}
 .attachment-preview{
-  display:none;padding:8px 12px;margin-bottom:8px;
-  border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:12px
+  display:none;
+  padding:10px;
+  margin-bottom:8px;
+  border:1px solid var(--line);
+  border-radius:12px;
+  color:var(--muted);
+  font-size:12px;
+  background:var(--panel);
 }
+.attachment-preview img{
+  display:block;
+  max-width:180px;
+  max-height:180px;
+  object-fit:contain;
+  border-radius:10px;
+  margin-bottom:8px;
+}
+  
 .input-box{
   display:flex;align-items:flex-end;gap:8px;padding:10px;
   border:1px solid rgba(137,151,255,.25);border-radius:18px;
@@ -584,12 +599,27 @@ async function sendMessage() {
   isSending = true;
   $("sendBtn").disabled = true;
 
-  const userText = text || ("Please read this attachment: " + selectedAttachment.name);
-  messages.push({role:"user", content:userText});
-  addMessage("user", userText);
+  const attachmentToSend = selectedAttachment;
 
-  input.value = "";
-  resizeInput();
+const userText = text || (
+  attachmentToSend
+    ? "Please read this attachment: " + attachmentToSend.name
+    : ""
+);
+
+const attachmentImageUrl =
+  attachmentToSend && attachmentToSend.mimeType.startsWith("image/")
+    ? "data:" + attachmentToSend.mimeType + ";base64," + attachmentToSend.data
+    : null;
+
+messages.push({role:"user", content:userText});
+
+addMessage("user", userText, {
+  imageUrl: attachmentImageUrl
+});
+
+input.value = "";
+resizeInput();
 
   const attachmentToSend = selectedAttachment;
   selectedAttachment = null;
@@ -821,9 +851,22 @@ function handleAttachment(event) {
       data:base64
     };
 
-    $("attachmentPreview").textContent = "📎 " + file.name + " — ready to send";
-    $("attachmentPreview").style.display = "block";
-    toast("Attachment added.");
+    const preview = $("attachmentPreview");
+preview.replaceChildren();
+
+if (file.type.startsWith("image/")) {
+  const image = document.createElement("img");
+  image.src = reader.result;
+  image.alt = "Selected image preview";
+  preview.appendChild(image);
+}
+
+const label = document.createElement("div");
+label.textContent = "📎 " + file.name + " — ready to send";
+preview.appendChild(label);
+
+preview.style.display = "block";
+toast("Attachment added.");
   };
   reader.onerror = () => toast("Couldn't read that file.");
   reader.readAsDataURL(file);
