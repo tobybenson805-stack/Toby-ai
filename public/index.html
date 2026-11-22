@@ -621,11 +621,10 @@ addMessage("user", userText, {
 input.value = "";
 resizeInput();
 
-  const attachmentToSend = selectedAttachment;
-  selectedAttachment = null;
-  $("attachmentPreview").style.display = "none";
+selectedAttachment = null;
+$("attachmentPreview").style.display = "none";
 
-  showTyping();
+showTyping();
 
   try {
     const data = await api("/chat", {
