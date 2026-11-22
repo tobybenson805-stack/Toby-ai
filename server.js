@@ -772,6 +772,7 @@ const conversationText = messages
 
 
   
+
 app.post("/generate-image", async (req, res) => {
   try {
     const userId = requireLogin(req, res);
@@ -785,27 +786,27 @@ app.post("/generate-image", async (req, res) => {
       prompt.length > 2000
     ) {
       return res.status(400).json({
-        error: "Enter an image description of up to 2000 characters."
+        error: "Enter a valid image description."
       });
     }
 
-    if (
-      !process.env.CLOUDFLARE_ACCOUNT_ID ||
-      !process.env.CLOUDFLARE_API_TOKEN
-    ) {
+    const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+    const apiToken = process.env.CLOUDFLARE_API_TOKEN;
+
+    if (!accountId || !apiToken) {
       return res.status(500).json({
-        error: "Image generation is not configured."
+        error: "Cloudflare is not configured."
       });
     }
 
     console.log("Starting Cloudflare image generation...");
 
     const response = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/ai/run/@cf/black-forest-labs/flux-1-schnell`,
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.CLOUDFLARE_API_TOKEN}`,
+          "Authorization": `Bearer ${apiToken}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
@@ -815,40 +816,87 @@ app.post("/generate-image", async (req, res) => {
       }
     );
 
-    const result = await response.json();
+    const contentType =
+      response.headers.get("content-type") || "";
 
-    if (!response.ok || !result.success) {
-      console.error(
-        "Cloudflare image error:",
-        JSON.stringify(result).slice(0, 2000)
-      );
+    if (!response.ok) {
+      const errorText = await response.text();
+
+      console.error("Cloudflare HTTP error:", {
+        status: response.status,
+        details: errorText.slice(0, 2000)
+      });
 
       return res.status(502).json({
-        error: "Image generation failed. Please try again."
+        error: "Cloudflare rejected the image request."
       });
     }
 
-    const imageData = result.result?.image;
+    let imageBuffer;
+    let mimeType = "image/png";
 
-    if (!imageData) {
-      console.error("Cloudflare returned no image.");
+    if (contentType.startsWith("image/")) {
+      imageBuffer = Buffer.from(
+        await response.arrayBuffer()
+      );
+
+      mimeType = contentType.split(";")[0];
+
+    } else {
+      const responseText = await response.text();
+
+      let data;
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        console.error(
+          "Unexpected Cloudflare response:",
+          responseText.slice(0, 1000)
+        );
+
+        return res.status(502).json({
+          error: "Cloudflare returned an unexpected response."
+        });
+      }
+
+      const imageData =
+        data.result?.image || data.result;
+
+      if (
+        typeof imageData !== "string" ||
+        !imageData
+      ) {
+        console.error(
+          "No image in Cloudflare response:",
+          JSON.stringify(data).slice(0, 1000)
+        );
+
+        return res.status(502).json({
+          error: "Cloudflare did not return an image."
+        });
+      }
+
+      imageBuffer = Buffer.from(imageData, "base64");
+    }
+
+    if (!imageBuffer || imageBuffer.length === 0) {
       return res.status(502).json({
-        error: "No image was returned."
+        error: "The generated image was empty."
       });
     }
 
     console.log("Cloudflare image generated successfully.");
 
     return res.json({
-      image: imageData,
-      mimeType: "image/jpeg"
+      image: imageBuffer.toString("base64"),
+      mimeType
     });
 
   } catch (error) {
-    console.error(
-      "Cloudflare image generation error:",
-      error.message || error
-    );
+    console.error("Cloudflare image generation error:", {
+      message: error.message
+    });
 
     return res.status(500).json({
       error: "Image generation failed. Please try again."
