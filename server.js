@@ -770,6 +770,7 @@ const conversationText = messages
 // IMAGE GENERATION
 // =====================================
 
+
 app.post("/generate-image", async (req, res) => {
   try {
     const userId = requireLogin(req, res);
@@ -787,37 +788,53 @@ app.post("/generate-image", async (req, res) => {
       });
     }
 
+    console.log("Starting Toby AI image generation...");
+
     const result = await ai.models.generateContent({
       model: "gemini-2.5-flash-image",
-      contents: prompt.trim()
+      contents: prompt.trim(),
+      config: {
+        responseModalities: ["TEXT", "IMAGE"]
+      }
     });
 
     const parts =
       result.candidates?.[0]?.content?.parts || [];
 
     const imagePart = parts.find(
-      part => part.inlineData && part.inlineData.data
+      part => part.inlineData?.data
     );
 
     if (!imagePart) {
+      console.error(
+        "No image returned. Gemini response:",
+        JSON.stringify(result).slice(0, 3000)
+      );
+
       return res.status(502).json({
-        error: "Gemini could not generate an image."
+        error: "Gemini did not return an image. Please try another prompt."
       });
     }
 
-    res.json({
+    console.log("Toby AI image generated successfully.");
+
+    return res.json({
       image: imagePart.inlineData.data,
       mimeType: imagePart.inlineData.mimeType || "image/png"
     });
 
   } catch (error) {
-    console.error("Image generation error:", error);
+    console.error(
+      "Image generation error:",
+      error.message || error
+    );
 
-    res.status(500).json({
+    return res.status(500).json({
       error: "Image generation failed. Please try again."
     });
   }
 });
+
 
 // =====================================
 // TOBY AI VOICE
