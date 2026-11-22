@@ -824,12 +824,13 @@ app.post("/generate-image", async (req, res) => {
     });
 
   } catch (error) {
-    console.error(
-      "Image generation error:",
-      error.message || error
-    );
+    console.error("IMAGE GENERATION ERROR:", {
+      status: error.status || error.code,
+      message: error.message,
+      details: error.error || error.details
+    });
 
-    return res.status(500).json({
+    res.status(500).json({
       error: "Image generation failed. Please try again."
     });
   }
