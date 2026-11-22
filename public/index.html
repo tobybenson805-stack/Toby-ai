@@ -609,6 +609,7 @@ function removeTyping() {
   if (el) el.remove();
 }
 
+
 async function sendMessage() {
   if (isSending) return;
 
@@ -626,61 +627,156 @@ async function sendMessage() {
     return;
   }
 
+  // Detect image-generation requests.
+  const startsDrawing = /^(draw|paint|illustrate)\b/i.test(text);
+  const startsCreating = /^(generate|create|make|design)\b/i.test(text);
+
+  const hasImageWord =
+    /\b(image|picture|photo|illustration|artwork|wallpaper|logo|poster|portrait|drawing|graphic)\b/i.test(text);
+
+  const hasStyleWord =
+    /\b(realistic|photorealistic|anime|3d|cartoon)\b/i.test(text);
+
+  const isImageRequest =
+    !selectedAttachment &&
+    (startsDrawing || (startsCreating && (hasImageWord || hasStyleWord)));
+
   isSending = true;
   $("sendBtn").disabled = true;
 
   const attachmentToSend = selectedAttachment;
 
-const userText = text || (
-  attachmentToSend
-    ? "Please read this attachment: " + attachmentToSend.name
-    : ""
-);
-
-const attachmentImageUrl =
-  attachmentToSend && attachmentToSend.mimeType.startsWith("image/")
-    ? "data:" + attachmentToSend.mimeType + ";base64," + attachmentToSend.data
-    : null;
-
-messages.push({role:"user", content:userText});
-
-addMessage("user", userText, {
-  imageUrl: attachmentImageUrl
-});
-
-input.value = "";
-resizeInput();
-
-selectedAttachment = null;
-$("attachmentPreview").style.display = "none";
-
-showTyping();
-
   try {
+    // Generate images directly inside the chat.
+    if (isImageRequest) {
+      const styleMatch = text.match(
+        /\b(anime|3d|cartoon|realistic|photorealistic)\b/i
+      );
+
+      const style = styleMatch
+        ? styleMatch[0].toLowerCase()
+        : "realistic";
+
+      const styleInstructions = {
+        realistic: "Photorealistic style, natural lighting and lifelike details.",
+        photorealistic: "Highly photorealistic style with lifelike details.",
+        anime: "Japanese anime illustration style with expressive details.",
+        "3d": "High-quality 3D rendered style with dimensional lighting.",
+        cartoon: "Colorful cartoon illustration style with clean outlines."
+      };
+
+      const finalPrompt =
+        text + "\n\nImage style: " + styleInstructions[style];
+
+      addMessage("user", text);
+      input.value = "";
+      resizeInput();
+      showTyping();
+
+      try {
+        const data = await api("/generate-image", {
+          method: "POST",
+          body: JSON.stringify({ prompt: finalPrompt })
+        });
+
+        removeTyping();
+
+        const raw =
+          data.image || data.imageBase64 ||
+          data.imageData || data.data;
+
+        if (!raw) {
+          throw new Error("The server did not return image data.");
+        }
+
+        const mimeType = data.mimeType || "image/png";
+
+        const imageUrl = String(raw).startsWith("data:")
+          ? raw
+          : "data:" + mimeType + ";base64," + raw;
+
+        addMessage(
+          "assistant",
+          "Your " + style + " image is ready!",
+          { imageUrl }
+        );
+
+      } catch (error) {
+        removeTyping();
+        addMessage(
+          "assistant",
+          "Image generation failed: " + error.message
+        );
+      }
+
+      return;
+    }
+
+    // Normal Toby AI chat continues working.
+    const userText = text || (
+      attachmentToSend
+        ? "Please read this attachment: " + attachmentToSend.name
+        : ""
+    );
+
+    const attachmentImageUrl =
+      attachmentToSend &&
+      attachmentToSend.mimeType.startsWith("image/")
+        ? "data:" + attachmentToSend.mimeType +
+          ";base64," + attachmentToSend.data
+        : null;
+
+    messages.push({ role: "user", content: userText });
+
+    addMessage("user", userText, {
+      imageUrl: attachmentImageUrl
+    });
+
+    input.value = "";
+    resizeInput();
+
+    selectedAttachment = null;
+    $("attachmentPreview").style.display = "none";
+
+    showTyping();
+
     const data = await api("/chat", {
-      method:"POST",
-      body:JSON.stringify({
-        messages:messages,
-        conversationId:conversationId,
-        attachment:attachmentToSend
+      method: "POST",
+      body: JSON.stringify({
+        messages: messages,
+        conversationId: conversationId,
+        attachment: attachmentToSend
       })
     });
 
     removeTyping();
 
-    const reply = data.reply || data.response || data.message ||
-      data.text || "I received your message, but no reply text was returned.";
+    const reply =
+      data.reply || data.response || data.message ||
+      data.text ||
+      "I received your message, but no reply text was returned.";
 
-    if (data.conversationId) conversationId = data.conversationId;
+    if (data.conversationId) {
+      conversationId = data.conversationId;
+    }
 
-    messages.push({role:"assistant",content:reply});
+    messages.push({ role: "assistant", content: reply });
     addMessage("assistant", reply);
 
-    await Promise.allSettled([loadUsage(), loadConversations()]);
+    await Promise.allSettled([
+      loadUsage(),
+      loadConversations()
+    ]);
+
   } catch (error) {
     removeTyping();
     messages.pop();
-    addMessage("assistant", "Sorry, I couldn't complete that request. " + error.message);
+
+    addMessage(
+      "assistant",
+      "Sorry, I couldn't complete that request. " + error.message
+    );
+
   } finally {
     isSending = false;
     $("sendBtn").disabled = false;
