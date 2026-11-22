@@ -420,6 +420,16 @@ button{cursor:pointer}
     <h2>Generate an image</h2>
     <p>Describe the image you want Toby AI to create.</p>
     <textarea id="imagePrompt" rows="3" placeholder="Describe your image..." style="width:100%;padding:12px;border-radius:10px;background:#080e20;border:1px solid var(--line);color:white;resize:vertical"></textarea>
+  <label for="imageStyle" style="display:block;margin-top:14px;color:#cbd4ee;font-size:13px">
+  Choose image style
+</label>
+
+<select id="imageStyle" style="width:100%;padding:12px;margin-top:8px;border-radius:10px;background:#080e20;border:1px solid var(--line);color:white">
+  <option value="realistic">Realistic</option>
+  <option value="anime">Anime</option>
+  <option value="3d">3D</option>
+  <option value="cartoon">Cartoon</option>
+</select>
     <div class="modal-actions">
       <button class="primary" onclick="submitImageGeneration()">Generate</button>
       <button class="secondary" onclick="closeImageModal()">Cancel</button>
@@ -957,82 +967,49 @@ function closeImageModal() {
 
 async function submitImageGeneration() {
   const prompt = $("imagePrompt").value.trim();
+  const style = $("imageStyle").value;
+
   if (!prompt) {
     toast("Please describe the image first.");
     return;
   }
 
+  const styleInstructions = {
+    realistic: "Photorealistic style, realistic lighting, natural textures and lifelike details.",
+    anime: "Japanese anime illustration style, expressive line art and vibrant colors.",
+    "3d": "High-quality 3D rendered style, dimensional lighting and detailed materials.",
+    cartoon: "Colorful cartoon illustration style, clean outlines and playful shapes."
+  };
+
+  const finalPrompt = prompt + "\n\nImage style: " + styleInstructions[style];
+
   closeImageModal();
-  addMessage("user", "Generate an image: " + prompt);
+  addMessage("user", "Generate a " + style + " image: " + prompt);
   showTyping();
 
   try {
     const data = await api("/generate-image", {
-      method:"POST",
-      body:JSON.stringify({prompt})
+      method: "POST",
+      body: JSON.stringify({ prompt: finalPrompt })
     });
 
     removeTyping();
 
     const raw = data.image || data.imageBase64 || data.imageData || data.data;
-    if (!raw) {
-      throw new Error("The server did not return image data.");
-    }
+    if (!raw) throw new Error("The server did not return image data.");
 
+    const mimeType = data.mimeType || "image/png";
     const imageUrl = String(raw).startsWith("data:")
       ? raw
-      : "data:image/png;base64," + raw;
+      : "data:" + mimeType + ";base64," + raw;
 
-    addMessage("assistant", "Your generated image is ready.", {imageUrl});
+    addMessage("assistant", "Your " + style + " image is ready.", { imageUrl });
+    $("imagePrompt").value = "";
   } catch (error) {
     removeTyping();
     addMessage("assistant", "Image generation wasn't successful: " + error.message);
   }
-}
-
-function openAccount() {
-  $("accountModal").style.display = "flex";
-}
-function closeAccount() {
-  $("accountModal").style.display = "none";
-}
-
-async function signIn() {
-  if (!clerk) {
-    toast("Account service is still loading. Please try again.");
-    return;
   }
-  try {
-    await clerk.openSignIn();
-  } catch (error) {
-    toast("Couldn't open sign in. " + error.message);
-  }
-}
-
-async function signUp() {
-  if (!clerk) {
-    toast("Account service is still loading. Please try again.");
-    return;
-  }
-  try {
-    await clerk.openSignUp();
-  } catch (error) {
-    toast("Couldn't open sign up. " + error.message);
-  }
-}
-
-async function logOut() {
-  if (!clerk) return;
-  try {
-    await clerk.signOut();
-    closeAccount();
-    await refreshAccount();
-    newChat();
-    toast("You have signed out.");
-  } catch (error) {
-    toast("Couldn't sign out. " + error.message);
-  }
-}
 
 async function refreshAccount() {
   if (clerk && clerk.user) {
