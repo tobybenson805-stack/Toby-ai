@@ -610,6 +610,7 @@ function removeTyping() {
 }
 
 
+ 
 async function sendMessage() {
   if (isSending) return;
 
@@ -627,19 +628,19 @@ async function sendMessage() {
     return;
   }
 
-  // Detect image-generation requests.
-  const startsDrawing = /^(draw|paint|illustrate)\b/i.test(text);
-  const startsCreating = /^(generate|create|make|design)\b/i.test(text);
-
-  const hasImageWord =
-    /\b(image|picture|photo|illustration|artwork|wallpaper|logo|poster|portrait|drawing|graphic)\b/i.test(text);
-
-  const hasStyleWord =
-    /\b(realistic|photorealistic|anime|3d|cartoon)\b/i.test(text);
+  // Recognize image requests.
+  const imagePatterns = [
+    /^(please\s+)?(draw|paint|illustrate|sketch|render|visualize)\b/i,
+    /^(can|could|would)\s+you\s+(please\s+)?(draw|paint|illustrate|sketch|render|create|generate|make)\b/i,
+    /^(please\s+)?(generate|create|make|design)\b.*\b(image|picture|photo|illustration|artwork|wallpaper|logo|poster|portrait|drawing|graphic|map|diagram|chart|graph)\b/i,
+    /^(please\s+)?(generate|create|make|design)\b.*\b(of|showing)\b/i,
+    /^(show|give)\s+me\s+(an?\s+)?(image|picture|photo|drawing|map|diagram)\b/i,
+    /\bI want you to (draw|paint|illustrate|sketch|render|create|generate)\b/i
+  ];
 
   const isImageRequest =
     !selectedAttachment &&
-    (startsDrawing || (startsCreating && (hasImageWord || hasStyleWord)));
+    imagePatterns.some(pattern => pattern.test(text));
 
   isSending = true;
   $("sendBtn").disabled = true;
@@ -647,34 +648,36 @@ async function sendMessage() {
   const attachmentToSend = selectedAttachment;
 
   try {
-    
-// Detect a wide range of image-generation requests.
-const imageRequestPatterns = [
-  /^(please\s+)?(draw|paint|illustrate|sketch|render|visualize)\b/i,
-  /^(can|could|would)\s+you\s+(please\s+)?(draw|paint|illustrate|sketch|render)\b/i,
-  /^(please\s+)?(generate|create|make|design)\b.*\b(image|picture|photo|illustration|artwork|wallpaper|logo|poster|portrait|drawing|graphic|map|diagram|chart|graph)\b/i,
-  /^(please\s+)?(generate|create|make|design)\b.*\b(of|showing)\b/i,
-  /^(show|give)\s+me\s+(an?\s+)?(image|picture|photo|drawing|map|diagram)\b/i,
-  /\bI want (an?\s+)?(image|picture|drawing|map|diagram)\b/i,
-  /\bI want you to (draw|paint|illustrate|sketch|render)\b/i
-];
+    // IMAGE GENERATION
+    if (isImageRequest) {
+      const styleMatch = text.match(
+        /\b(anime|3d|cartoon|realistic|photorealistic)\b/i
+      );
 
-const isImageRequest =
-  !selectedAttachment &&
-  imageRequestPatterns.some(pattern => pattern.test(text));
-  }:
+      const style = styleMatch
+        ? styleMatch[0].toLowerCase()
+        : "realistic";
+
+      const styleInstructions = {
+        realistic: "Photorealistic style with natural lighting and lifelike details.",
+        photorealistic: "Highly photorealistic style with lifelike details.",
+        anime: "Japanese anime illustration style.",
+        "3d": "High-quality three-dimensional rendered style.",
+        cartoon: "Colorful cartoon illustration style."
+      };
 
       const finalPrompt =
-  "Create an image based on this exact user request: " + text +
-  "\n\nInstructions:" +
-  "\n- Understand the complete subject requested." +
-  "\n- Include all important objects and details." +
-  "\n- Make the image clear, detailed and visually appealing." +
-  "\n- For educational diagrams, use a clean educational illustration." +
-  "\n- For maps, aim to represent the requested real-world geography." +
-  "\n- Do not invent labels, names, or geographical facts." +
-  "\n- Do not add unrelated objects or text." +
-  "\n\nImage style: " + styleInstructions[style];
+        "Create an image based on this exact user request: " + text +
+        "\n\nInstructions:" +
+        "\n- Understand the complete subject requested." +
+        "\n- Include the important objects and details." +
+        "\n- Make the image clear and detailed." +
+        "\n- Use an appropriate composition." +
+        "\n- For educational diagrams, use a clean educational illustration." +
+        "\n- For maps, aim to represent the requested geography." +
+        "\n- Do not invent labels, names, or geographical facts." +
+        "\n\nImage style: " + styleInstructions[style];
+
       addMessage("user", text);
       input.value = "";
       resizeInput();
@@ -689,8 +692,10 @@ const isImageRequest =
         removeTyping();
 
         const raw =
-          data.image || data.imageBase64 ||
-          data.imageData || data.data;
+          data.image ||
+          data.imageBase64 ||
+          data.imageData ||
+          data.data;
 
         if (!raw) {
           throw new Error("The server did not return image data.");
@@ -704,7 +709,7 @@ const isImageRequest =
 
         addMessage(
           "assistant",
-          "Your " + style + " image is ready!",
+          "Your image is ready!",
           { imageUrl }
         );
 
@@ -719,7 +724,7 @@ const isImageRequest =
       return;
     }
 
-    // Normal Toby AI chat continues working.
+    // NORMAL CHAT
     const userText = text || (
       attachmentToSend
         ? "Please read this attachment: " + attachmentToSend.name
@@ -733,7 +738,10 @@ const isImageRequest =
           ";base64," + attachmentToSend.data
         : null;
 
-    messages.push({ role: "user", content: userText });
+    messages.push({
+      role: "user",
+      content: userText
+    });
 
     addMessage("user", userText, {
       imageUrl: attachmentImageUrl
@@ -759,7 +767,9 @@ const isImageRequest =
     removeTyping();
 
     const reply =
-      data.reply || data.response || data.message ||
+      data.reply ||
+      data.response ||
+      data.message ||
       data.text ||
       "I received your message, but no reply text was returned.";
 
@@ -767,7 +777,11 @@ const isImageRequest =
       conversationId = data.conversationId;
     }
 
-    messages.push({ role: "assistant", content: reply });
+    messages.push({
+      role: "assistant",
+      content: reply
+    });
+
     addMessage("assistant", reply);
 
     await Promise.allSettled([
@@ -777,7 +791,10 @@ const isImageRequest =
 
   } catch (error) {
     removeTyping();
-    messages.pop();
+
+    if (messages.length && messages[messages.length - 1].role === "user") {
+      messages.pop();
+    }
 
     addMessage(
       "assistant",
@@ -790,6 +807,9 @@ const isImageRequest =
     input.focus();
   }
 }
+
+  
+
 
 function handleEnter(event) {
   if (event.key === "Enter" && !event.shiftKey) {
