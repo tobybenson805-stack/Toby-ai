@@ -557,6 +557,26 @@ resume.textContent = "▶ Resume";
 resume.onclick = () => window.speechSynthesis.resume();
 
 actions.append(play, pause, resume, copy);
+
+if (options.imageUrl) {
+  const download = document.createElement("button");
+  download.textContent = "⬇ Download";
+
+  download.onclick = () => {
+    const link = document.createElement("a");
+    link.href = options.imageUrl;
+
+    const mime = options.imageUrl.match(/^data:(image\/[^;]+)/)?.[1] || "image/png";
+    const extension = mime === "image/jpeg" ? "jpg" : mime.split("/")[1] || "png";
+
+    link.download = "toby-ai-image." + extension;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  actions.appendChild(download);
+  }
     body.appendChild(actions);
   }
 
