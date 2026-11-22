@@ -1166,6 +1166,56 @@ async function refreshAccount() {
 
 
 
+function openAccount() {
+  $("accountModal").style.display = "flex";
+}
+
+function closeAccount() {
+  $("accountModal").style.display = "none";
+}
+
+function signIn() {
+  if (!clerk) {
+    toast("Account service is still loading. Please wait and try again.");
+    return;
+  }
+
+  if (clerk.user) {
+    toast("You are already signed in.");
+    closeAccount();
+    return;
+  }
+
+  closeAccount();
+  clerk.openSignIn();
+}
+
+function signUp() {
+  if (!clerk) {
+    toast("Account service is still loading. Please wait and try again.");
+    return;
+  }
+
+  closeAccount();
+  clerk.openSignUp();
+}
+
+async function logOut() {
+  if (!clerk) {
+    toast("Account service is unavailable.");
+    return;
+  }
+
+  try {
+    await clerk.signOut();
+    closeAccount();
+    await refreshAccount();
+    toast("You have signed out.");
+  } catch (error) {
+    toast("Sign out failed: " + error.message);
+  }
+}
+
 async function startClerk() {
   const status = $("accountEmail");
   status.textContent = "Connecting to Clerk...";
